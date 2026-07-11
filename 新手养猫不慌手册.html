@@ -8,10 +8,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <style>
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #F7F1E3; }
+  html, body { margin: 0; padding: 0; background: #F4F7FA; }
   #root { min-height: 100vh; }
   button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible {
-    outline: 2px solid #14695B; outline-offset: 2px;
+    outline: 2px solid #0FA98E; outline-offset: 2px;
   }
   input, textarea, button { font: inherit; }
 </style>
@@ -21,20 +21,20 @@
 <script>
 const { useState, useRef, useEffect } = React;
 const C = {
-  paper: "#F7F1E3",
-  paperLight: "#FFFBF0",
-  ink: "#2B2A24",
-  inkSoft: "#6B675C",
-  teal: "#14695B",
-  tealSoft: "#DCEAE4",
-  verm: "#DC4B27",
-  vermSoft: "#F9E2D8",
-  yellow: "#E9AE2B",
-  yellowSoft: "#FBF0D4",
-  line: "#D8CFB9"
+  paper: "#F4F7FA",
+  paperLight: "#FFFFFF",
+  ink: "#16324A",
+  inkSoft: "#6E8296",
+  teal: "#0FA98E",
+  tealSoft: "#E1F5F0",
+  verm: "#E5504F",
+  vermSoft: "#FDEAEA",
+  yellow: "#F0A02F",
+  yellowSoft: "#FDF3E0",
+  line: "#E3EAF1"
 };
 const F = {
-  display: '"Songti SC","Noto Serif SC","STSong","SimSun",serif',
+  display: '"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif',
   body: '"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif',
   mono: "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"
 };
@@ -91,7 +91,7 @@ async function askClaude(system, messages) {
   const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
   return JSON.parse(text.replace(/```json|```/g, "").trim());
 }
-function Stamp({ text, color = C.verm, rotate = -8 }) {
+function Stamp({ text, color = C.teal, rotate = -8 }) {
   return /* @__PURE__ */ React.createElement("span", { style: {
     display: "inline-flex",
     alignItems: "center",
@@ -118,9 +118,9 @@ function Eyebrow({ children }) {
 function PerforatedCard({ children, style }) {
   return /* @__PURE__ */ React.createElement("div", { style: {
     background: C.paperLight,
-    border: `1.5px solid ${C.ink}`,
-    borderRadius: 10,
-    boxShadow: `3px 3px 0 ${C.line}`,
+    border: `1px solid ${C.line}`,
+    borderRadius: 16,
+    boxShadow: "0 2px 10px rgba(22,50,74,.06)",
     ...style
   } }, children);
 }
@@ -129,18 +129,18 @@ function Btn({ children, onClick, variant = "primary", disabled, style }) {
     fontFamily: F.body,
     fontWeight: 600,
     fontSize: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: "13px 18px",
     cursor: disabled ? "not-allowed" : "pointer",
-    border: `1.5px solid ${C.ink}`,
+    border: "none",
     width: "100%",
     transition: "transform .08s ease",
     opacity: disabled ? 0.45 : 1
   };
   const variants = {
-    primary: { background: C.verm, color: "#fff", boxShadow: `3px 3px 0 ${C.ink}` },
-    ink: { background: C.ink, color: C.paper, boxShadow: `3px 3px 0 ${C.line}` },
-    ghost: { background: "transparent", color: C.ink, boxShadow: "none", borderStyle: "dashed" }
+    primary: { background: C.teal, color: "#fff", boxShadow: "0 4px 14px rgba(15,169,142,.35)" },
+    ink: { background: C.ink, color: "#fff", boxShadow: "0 4px 14px rgba(22,50,74,.22)" },
+    ghost: { background: "transparent", color: C.teal, boxShadow: "none", border: `1.5px dashed ${C.teal}` }
   };
   return /* @__PURE__ */ React.createElement(
     "button",
@@ -156,9 +156,9 @@ function Btn({ children, onClick, variant = "primary", disabled, style }) {
 }
 function TabBar({ active, go }) {
   const tabs = [
-    ["timeline", "\u{1F4D6}", "\u624B\u518C"],
+    ["timeline", "\u{1F4C5}", "\u5065\u5EB7"],
     ["consult", "\u{1FA7A}", "\u95EE\u8BCA"],
-    ["hospitals", "\u{1F4CD}", "\u533B\u9662"],
+    ["hospitals", "\u{1F3E5}", "\u533B\u9662"],
     ["mine", "\u{1F43E}", "\u6211\u7684"]
   ];
   return /* @__PURE__ */ React.createElement("nav", { style: {
@@ -169,24 +169,24 @@ function TabBar({ active, go }) {
     width: "100%",
     maxWidth: 420,
     background: C.paperLight,
-    borderTop: `2px solid ${C.ink}`,
+    borderTop: `1px solid ${C.line}`,
     display: "flex",
     zIndex: 50
   } }, tabs.map(([key, icon, label]) => /* @__PURE__ */ React.createElement("button", { key, onClick: () => go(key), "aria-label": label, style: {
     flex: 1,
-    padding: "9px 0 10px",
+    padding: "9px 0 calc(10px + env(safe-area-inset-bottom))",
     background: "transparent",
     border: "none",
     cursor: "pointer",
     fontFamily: F.body,
-    color: active === key ? C.verm : C.inkSoft,
+    color: active === key ? C.teal : C.inkSoft,
     fontWeight: active === key ? 800 : 500
   } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20, filter: active === key ? "none" : "grayscale(1) opacity(.6)" } }, icon), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, marginTop: 2 } }, label), /* @__PURE__ */ React.createElement("div", { style: {
     width: 18,
     height: 3,
     borderRadius: 2,
     margin: "4px auto 0",
-    background: active === key ? C.verm : "transparent"
+    background: active === key ? C.teal : "transparent"
   } }))));
 }
 function PetGuardian() {
@@ -324,17 +324,15 @@ function PetGuardian() {
     background: C.paper,
     fontFamily: F.body,
     color: C.ink,
-    backgroundImage: `radial-gradient(${C.line} .8px, transparent .8px)`,
-    backgroundSize: "18px 18px",
     display: "flex",
     justifyContent: "center"
   };
-  const phone = { width: "100%", maxWidth: 420, padding: "20px 18px 40px", position: "relative" };
+  const phone = { width: "100%", maxWidth: 420, padding: "20px 18px 96px", position: "relative", minHeight: "100vh", background: C.paper, boxShadow: "0 0 40px rgba(22,50,74,.10)" };
   function TopBar({ back, title }) {
     return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("button", { onClick: back, "aria-label": "\u8FD4\u56DE", style: {
-      border: `1.5px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       background: C.paperLight,
-      borderRadius: 8,
+      borderRadius: 999,
       width: 34,
       height: 34,
       cursor: "pointer",
@@ -355,7 +353,7 @@ function PetGuardian() {
       height: 64,
       borderRadius: 10,
       background: C.yellowSoft,
-      border: `1.5px dashed ${C.ink}`,
+      border: `1.5px dashed ${C.line}`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -373,7 +371,7 @@ function PetGuardian() {
       borderRadius: 999,
       cursor: "pointer",
       fontSize: 14,
-      border: `1.5px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       fontWeight: active ? 700 : 400,
       background: active ? C.teal : C.paperLight,
       color: active ? "#fff" : C.ink
@@ -383,7 +381,7 @@ function PetGuardian() {
       padding: "12px 14px",
       borderRadius: 10,
       fontSize: 15,
-      border: `1.5px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       background: C.paperLight,
       fontFamily: F.body,
       color: C.ink,
@@ -391,16 +389,16 @@ function PetGuardian() {
       boxSizing: "border-box"
     };
     const breeds = ["\u82F1\u77ED", "\u7F8E\u77ED", "\u7530\u56ED\u732B", "\u5E03\u5076", "\u6A58\u732B", "\u72F8\u82B1"];
-    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => step ? setStep(step - 1) : setScreen("home"), title: "\u5EFA\u7ACB\u5BA0\u7269\u6863\u6848" }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 22 } }, steps.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: s, style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { height: 5, borderRadius: 3, background: i <= step ? C.verm : C.line } }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, marginTop: 4, color: i <= step ? C.ink : C.inkSoft, fontFamily: F.mono } }, s)))), step === 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: "0 0 8px" } }, "\u732B\u54AA\u600E\u4E48\u517B\uFF1F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.inkSoft, margin: "0 0 18px", lineHeight: 1.7 } }, "\u5168\u5BA4\u5185\u548C\u4F1A\u51FA\u95E8\u7684\u732B\uFF0C\u75AB\u82D7\u548C\u9A71\u866B\u65B9\u6848\u4E0D\u4E00\u6837\u3002"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12 } }, [["indoor", "\u{1F3E0}", "\u5168\u5BA4\u5185"], ["outdoor", "\u{1F33F}", "\u4F1A\u51FA\u95E8"]].map(([v, e, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => setProfile((p) => ({ ...p, lifestyle: v })), style: {
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => step ? setStep(step - 1) : setScreen("home"), title: "\u5EFA\u7ACB\u5BA0\u7269\u6863\u6848" }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 22 } }, steps.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: s, style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { height: 5, borderRadius: 3, background: i <= step ? C.teal : C.line } }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, marginTop: 4, color: i <= step ? C.ink : C.inkSoft, fontFamily: F.mono } }, s)))), step === 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: "0 0 8px" } }, "\u732B\u54AA\u600E\u4E48\u517B\uFF1F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.inkSoft, margin: "0 0 18px", lineHeight: 1.7 } }, "\u5168\u5BA4\u5185\u548C\u4F1A\u51FA\u95E8\u7684\u732B\uFF0C\u75AB\u82D7\u548C\u9A71\u866B\u65B9\u6848\u4E0D\u4E00\u6837\u3002"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12 } }, [["indoor", "\u{1F3E0}", "\u5168\u5BA4\u5185"], ["outdoor", "\u{1F33F}", "\u4F1A\u51FA\u95E8"]].map(([v, e, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => setProfile((p) => ({ ...p, lifestyle: v })), style: {
       flex: 1,
       padding: "26px 0",
       borderRadius: 14,
       cursor: "pointer",
-      border: `1.5px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       fontSize: 15,
       fontWeight: 600,
-      background: profile.lifestyle === v ? C.vermSoft : C.paperLight,
-      boxShadow: profile.lifestyle === v ? `3px 3px 0 ${C.ink}` : "none"
+      background: profile.lifestyle === v ? C.tealSoft : C.paperLight,
+      boxShadow: profile.lifestyle === v ? "0 3px 10px rgba(15,169,142,.25)" : "none"
     } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 44 } }, e), l)))), step === 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: 0 } }, "\u5B83\u53EB\u4EC0\u4E48\u540D\u5B57\uFF1F"), /* @__PURE__ */ React.createElement(
       "input",
       {
@@ -463,7 +461,7 @@ function PetGuardian() {
         }
       }
     ), /* @__PURE__ */ React.createElement("button", { onClick: () => fileRef.current?.click(), style: {
-      border: `1.5px dashed ${C.ink}`,
+      border: `1.5px dashed ${C.line}`,
       borderRadius: 14,
       background: C.paperLight,
       padding: profile.photo ? 8 : 26,
@@ -482,7 +480,7 @@ function PetGuardian() {
       borderRadius: "50%",
       overflow: "hidden",
       flexShrink: 0,
-      border: `2px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       background: C.tealSoft,
       display: "flex",
       alignItems: "center",
@@ -491,9 +489,9 @@ function PetGuardian() {
     } }, profile.photo ? /* @__PURE__ */ React.createElement("img", { src: profile.photo, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }) : "\u{1F431}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 19 } }, petLabel), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, marginTop: 2 } }, profile.breed || "\u672A\u77E5\u54C1\u79CD", " \xB7 ", profile.ageMonths || "?", "\u6708\u9F84 \xB7 ", profile.weight || "?", "kg \xB7 ", profile.sex, profile.neutered ? ` \xB7 ${profile.neutered}` : "")), /* @__PURE__ */ React.createElement(Stamp, { text: "\u6863\u6848\u5DF2\u5EFA", color: C.teal, rotate: 10 }))), tlLoading ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.inkSoft } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, animation: "spin 1.6s linear infinite", display: "inline-block" } }, "\u2726"), /* @__PURE__ */ React.createElement("style", null, `@keyframes spin{to{transform:rotate(360deg)}}`), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, fontFamily: F.display, fontSize: 16 } }, "\u6B63\u5728\u4E3A", petLabel, "\u5B9A\u5236\u517B\u62A4\u8BA1\u5212\u2026"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, marginTop: 6, fontFamily: F.mono } }, "\u7ED3\u5408\u54C1\u79CD \xB7 \u6708\u9F84 \xB7 \u5DF2\u5B8C\u6210\u4E8B\u9879")) : /* @__PURE__ */ React.createElement(React.Fragment, null, groups.map(([key, label, color, soft]) => {
       const items = (timeline || []).filter((t) => t.period === key);
       if (!items.length) return null;
-      return /* @__PURE__ */ React.createElement("div", { key, style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: "50%", background: color, border: `1.5px solid ${C.ink}` } }), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 16 } }, label), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, borderTop: `1.5px dashed ${C.line}` } })), /* @__PURE__ */ React.createElement("div", { style: { borderLeft: `2px solid ${C.ink}`, marginLeft: 4, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 10 } }, items.map((t, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
+      return /* @__PURE__ */ React.createElement("div", { key, style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: "50%", background: color, border: `1px solid ${C.line}` } }), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 16 } }, label), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, borderTop: `1.5px dashed ${C.line}` } })), /* @__PURE__ */ React.createElement("div", { style: { borderLeft: `1px solid ${C.line}`, marginLeft: 4, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 10 } }, items.map((t, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
         background: soft,
-        border: `1.5px solid ${C.ink}`,
+        border: `1px solid ${C.line}`,
         borderRadius: 10,
         padding: "12px 14px",
         position: "relative"
@@ -505,7 +503,7 @@ function PetGuardian() {
         height: 12,
         borderRadius: "50%",
         background: C.paper,
-        border: `2.5px solid ${C.ink}`
+        border: `2.5px solid ${C.teal}`
       } }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } }, /* @__PURE__ */ React.createElement("b", { style: { fontSize: 15 } }, t.category === "\u533B\u5631" ? "\u{1F3E5} " : "", t.title), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, whiteSpace: "nowrap" } }, t.suggested_date)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, t.reason), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, marginTop: 8, fontFamily: F.mono, color: C.teal } }, "\u{1F514} \u5230\u671F\u63D0\u9192 \xB7 \u5DF2\u5F00\u542F\uFF08demo\uFF09")))));
     }), tlSource === "cache" && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, textAlign: "center", marginBottom: 10 } }, "\u26A1 \u5F53\u524D\u4E3A\u9884\u7F6E\u6F14\u793A\u6570\u636E\uFF08\u63A5\u53E3\u672A\u8FDE\u901A\uFF09"), /* @__PURE__ */ React.createElement(Btn, { variant: "ink", onClick: () => {
       setChat([]);
@@ -525,7 +523,7 @@ function PetGuardian() {
       padding: "10px 14px",
       fontSize: 14.5,
       lineHeight: 1.6,
-      border: `1.5px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       borderRadius: m.role === "user" ? "14px 14px 3px 14px" : "14px 14px 14px 3px",
       background: m.role === "user" ? C.teal : C.paperLight,
       color: m.role === "user" ? "#fff" : C.ink
@@ -535,7 +533,7 @@ function PetGuardian() {
     })(), /* @__PURE__ */ React.createElement("div", { ref: chatEndRef })), !triage && /* @__PURE__ */ React.createElement("div", { style: { paddingTop: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" } }, ["\u5455\u5410\u4E86", "\u4E0D\u5403\u4E1C\u897F", "\u5C3F\u4E0D\u51FA\u6765"].map((c) => /* @__PURE__ */ React.createElement("button", { key: c, onClick: () => sendConsult(c), disabled: chatBusy, style: {
       padding: "8px 14px",
       borderRadius: 999,
-      border: `1.5px dashed ${C.ink}`,
+      border: `1.5px dashed ${C.line}`,
       background: C.paperLight,
       cursor: "pointer",
       fontSize: 13.5
@@ -551,7 +549,7 @@ function PetGuardian() {
           padding: "12px 14px",
           borderRadius: 10,
           fontSize: 14.5,
-          border: `1.5px solid ${C.ink}`,
+          border: `1px solid ${C.line}`,
           background: C.paperLight,
           outline: "none",
           fontFamily: F.body,
@@ -565,7 +563,7 @@ function PetGuardian() {
   }
   if (screen === "hospitals") {
     const sorted = [...HOSPITALS].sort((a, b) => (b.is24h ? 1 : 0) - (a.is24h ? 1 : 0));
-    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u897F\u7EA2\u95E8\u9547 \xB7 \u5BA0\u7269\u533B\u9662"), triage && /* @__PURE__ */ React.createElement(Stamp, { text: triage.level === "red" ? "\u6025\u8BCA\u4F18\u5148" : "\u5C3D\u5FEB\u5C31\u533B", rotate: 8 })), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 0, overflow: "hidden", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 380 190", style: { display: "block", width: "100%", background: "#EFE7D2" }, role: "img", "aria-label": "\u897F\u7EA2\u95E8\u9547\u533B\u9662\u5206\u5E03\u793A\u610F\u56FE" }, /* @__PURE__ */ React.createElement("path", { d: "M0,95 C90,70 160,120 380,85", stroke: C.line, strokeWidth: "14", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M120,0 C130,80 110,130 140,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M250,0 C240,70 270,120 255,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "26", fontSize: "13", fill: C.inkSoft, fontFamily: F.display }, "\u897F\u7EA2\u95E8\u9547\uFF08\u793A\u610F\uFF09"), /* @__PURE__ */ React.createElement("circle", { cx: "190", cy: "100", r: "7", fill: C.teal, stroke: C.ink, strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: "202", y: "104", fontSize: "11", fill: C.ink }, "\u4F60\u5728\u8FD9"), [[95, 60, true], [280, 55, false], [70, 140, false], [305, 130, false], [180, 160, false], [235, 92, false]].map(([x, y, is24], i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: x, cy: y, r: is24 ? 9 : 6.5, fill: is24 ? C.verm : C.paperLight, stroke: C.ink, strokeWidth: "2" }), is24 && /* @__PURE__ */ React.createElement("text", { x: x + 13, y: y + 4, fontSize: "11", fontWeight: "700", fill: C.verm }, "24h"))))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u6309 24\u5C0F\u65F6\u4F18\u5148 + \u8DDD\u79BB \u6392\u5E8F \uFF5C \u6B63\u5F0F\u7248\u63A5\u5165\u9AD8\u5FB7\u5730\u56FE"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, sorted.map((h, i) => /* @__PURE__ */ React.createElement(PerforatedCard, { key: i, style: {
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u897F\u7EA2\u95E8\u9547 \xB7 \u5BA0\u7269\u533B\u9662"), triage && /* @__PURE__ */ React.createElement(Stamp, { text: triage.level === "red" ? "\u6025\u8BCA\u4F18\u5148" : "\u5C3D\u5FEB\u5C31\u533B", rotate: 8 })), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 0, overflow: "hidden", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 380 190", style: { display: "block", width: "100%", background: "#EFE7D2" }, role: "img", "aria-label": "\u897F\u7EA2\u95E8\u9547\u533B\u9662\u5206\u5E03\u793A\u610F\u56FE" }, /* @__PURE__ */ React.createElement("path", { d: "M0,95 C90,70 160,120 380,85", stroke: C.line, strokeWidth: "14", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M120,0 C130,80 110,130 140,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M250,0 C240,70 270,120 255,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "26", fontSize: "13", fill: C.inkSoft, fontFamily: F.display }, "\u897F\u7EA2\u95E8\u9547\uFF08\u793A\u610F\uFF09"), /* @__PURE__ */ React.createElement("circle", { cx: "190", cy: "100", r: "7", fill: C.teal, stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: "202", y: "104", fontSize: "11", fill: C.ink }, "\u4F60\u5728\u8FD9"), [[95, 60, true], [280, 55, false], [70, 140, false], [305, 130, false], [180, 160, false], [235, 92, false]].map(([x, y, is24], i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: x, cy: y, r: is24 ? 9 : 6.5, fill: is24 ? C.verm : C.paperLight, stroke: "#fff", strokeWidth: "2" }), is24 && /* @__PURE__ */ React.createElement("text", { x: x + 13, y: y + 4, fontSize: "11", fontWeight: "700", fill: C.verm }, "24h"))))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u6309 24\u5C0F\u65F6\u4F18\u5148 + \u8DDD\u79BB \u6392\u5E8F \uFF5C \u6B63\u5F0F\u7248\u63A5\u5165\u9AD8\u5FB7\u5730\u56FE"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, sorted.map((h, i) => /* @__PURE__ */ React.createElement(PerforatedCard, { key: i, style: {
       padding: 14,
       borderColor: h.is24h ? C.verm : C.ink,
       borderWidth: h.is24h ? 2 : 1.5,
@@ -585,7 +583,7 @@ function PetGuardian() {
       textDecoration: "none",
       fontSize: 13.5,
       fontWeight: 700,
-      border: `1.5px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       borderRadius: 8,
       padding: "9px 0",
       background: h.is24h ? C.verm : C.ink,
@@ -599,7 +597,7 @@ function PetGuardian() {
       textAlign: "center",
       fontSize: 13.5,
       cursor: "pointer",
-      border: `1.5px dashed ${C.ink}`,
+      border: `1.5px dashed ${C.line}`,
       borderRadius: 8,
       padding: "9px 0",
       color: C.ink,
@@ -615,7 +613,7 @@ function PetGuardian() {
       width: "100%",
       textAlign: "left",
       background: C.paperLight,
-      border: `1.5px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       borderRadius: 12,
       padding: "14px",
       cursor: "pointer",
@@ -628,7 +626,7 @@ function PetGuardian() {
       borderRadius: "50%",
       overflow: "hidden",
       flexShrink: 0,
-      border: `2px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       background: C.tealSoft,
       display: "flex",
       alignItems: "center",
@@ -641,15 +639,15 @@ function PetGuardian() {
       paddingTop: 12,
       textAlign: "center",
       fontFamily: F.mono
-    } }, [[weekCount, "\u672C\u5468\u5F85\u529E"], [visits.length, "\u5C31\u8BCA\u8BB0\u5F55"], [consultLog.length, "\u95EE\u8BCA\u8BB0\u5F55"]].map(([n, l], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { flex: 1, borderLeft: i ? `1.5px dashed ${C.line}` : "none" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: C.verm } }, n), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.inkSoft, marginTop: 2 } }, l))))), /* @__PURE__ */ React.createElement("button", { onClick: () => setScreen("badge"), style: {
+    } }, [[weekCount, "\u672C\u5468\u5F85\u529E"], [visits.length, "\u5C31\u8BCA\u8BB0\u5F55"], [consultLog.length, "\u95EE\u8BCA\u8BB0\u5F55"]].map(([n, l], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { flex: 1, borderLeft: i ? `1.5px dashed ${C.line}` : "none" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: C.teal } }, n), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.inkSoft, marginTop: 2 } }, l))))), /* @__PURE__ */ React.createElement("button", { onClick: () => setScreen("badge"), style: {
       width: "100%",
       textAlign: "left",
       cursor: "pointer",
       marginBottom: 14,
       background: C.vermSoft,
-      border: `1.5px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       borderRadius: 12,
-      boxShadow: `3px 3px 0 ${C.line}`,
+      boxShadow: "0 2px 8px rgba(22,50,74,.08)",
       padding: "14px 16px",
       fontFamily: F.body,
       display: "flex",
@@ -667,7 +665,7 @@ function PetGuardian() {
       padding: "12px 14px",
       borderRadius: 10,
       fontSize: 14.5,
-      border: `1.5px solid ${C.ink}`,
+      border: `1px solid ${C.line}`,
       background: C.paperLight,
       fontFamily: F.body,
       color: C.ink,
@@ -731,7 +729,7 @@ function PetGuardian() {
   if (screen === "archive") {
     const w = [1.1, 1.4, Number(profile.weight) || 1.8];
     const pts = w.map((v, i) => `${30 + i * 140},${120 - v * 40}`).join(" ");
-    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("mine"), title: `${petLabel}\u7684\u5065\u5EB7\u6863\u6848` }), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 8 } }, "\u4F53\u91CD\u66F2\u7EBF"), /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 340 140", style: { width: "100%" }, role: "img", "aria-label": "\u4F53\u91CD\u66F2\u7EBF" }, /* @__PURE__ */ React.createElement("polyline", { points: pts, fill: "none", stroke: C.teal, strokeWidth: "3" }), w.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: 30 + i * 140, cy: 120 - v * 40, r: "6", fill: C.paperLight, stroke: C.ink, strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: 30 + i * 140, y: 120 - v * 40 - 12, fontSize: "12", textAnchor: "middle", fill: C.ink, fontFamily: F.mono }, v, "kg"))))), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 10 } }, "\u75AB\u82D7\u8BB0\u5F55"), [["\u9996\u9488\u75AB\u82D7", profile.done.includes("\u9996\u9488\u75AB\u82D7") || profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u7B2C\u4E8C\u9488\u75AB\u82D7", profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u72C2\u72AC\u75AB\u82D7", false]].map(([n, ok], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("mine"), title: `${petLabel}\u7684\u5065\u5EB7\u6863\u6848` }), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 8 } }, "\u4F53\u91CD\u66F2\u7EBF"), /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 340 140", style: { width: "100%" }, role: "img", "aria-label": "\u4F53\u91CD\u66F2\u7EBF" }, /* @__PURE__ */ React.createElement("polyline", { points: pts, fill: "none", stroke: C.teal, strokeWidth: "3" }), w.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: 30 + i * 140, cy: 120 - v * 40, r: "6", fill: C.paperLight, stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: 30 + i * 140, y: 120 - v * 40 - 12, fontSize: "12", textAnchor: "middle", fill: C.ink, fontFamily: F.mono }, v, "kg"))))), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 10 } }, "\u75AB\u82D7\u8BB0\u5F55"), [["\u9996\u9488\u75AB\u82D7", profile.done.includes("\u9996\u9488\u75AB\u82D7") || profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u7B2C\u4E8C\u9488\u75AB\u82D7", profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u72C2\u72AC\u75AB\u82D7", false]].map(([n, ok], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
       display: "flex",
       justifyContent: "space-between",
       padding: "9px 0",
