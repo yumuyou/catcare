@@ -332,6 +332,8 @@ function PetGuardian() {
   const [visitHospital, setVisitHospital] = useState(null);
   const [visitForm, setVisitForm] = useState({ date: "", diagnosis: "", advice: "", reports: [] });
   const [visitSaving, setVisitSaving] = useState(false);
+  const [weights, setWeights] = useState([]);
+  const [wInput, setWInput] = useState("");
   const chatEndRef = useRef(null);
   const fileRef = useRef(null);
   const reportRef = useRef(null);
@@ -346,6 +348,7 @@ function PetGuardian() {
     setDoneKeys({});
     setOpenItem("");
     setHowto({});
+    setWeights((ws) => ws.length === 0 && Number(profile.weight) > 0 ? [{ kg: Number(profile.weight), label: "\u5EFA\u6863" }] : ws);
     const sys = `\u4F60\u662F\u732B\u79D1\u533B\u7597\u987E\u95EE\u3002\u6839\u636E\u732B\u54AA\u6863\u6848\u751F\u6210\u517B\u62A4\u65F6\u95F4\u7EBF\u3002\u89C4\u5219\uFF1A\u4E25\u683C\u6309\u54C1\u79CD/\u6708\u9F84/\u4F53\u91CD/\u751F\u6D3B\u65B9\u5F0F(indoor=\u5168\u5BA4\u5185,outdoor=\u4F1A\u51FA\u95E8,\u51FA\u95E8\u732B\u9700\u72C2\u72AC\u75AB\u82D7\u4E0E\u66F4\u9891\u7E41\u4F53\u5916\u9A71\u866B)/\u5DF2\u5B8C\u6210\u4E8B\u9879/\u5BB6\u5EAD\u6210\u5458(family)\u8BA1\u7B97\uFF1B\u957F\u6BDB\u54C1\u79CD(\u5E03\u5076/\u7F05\u56E0\u7B49)\u6216\u6362\u6BDB\u5B63\u9700\u52A0\u68B3\u6BDB\u8282\u70B9\uFF1Bfamily\u542B\u72D7\u5219\u4F53\u5916\u9A71\u866B\u66F4\u9AD8\u9891\u5E76\u6CE8\u660E\u539F\u56E0\uFF1B2-6\u6708\u9F84\u53EF\u542B\u4E00\u6761\u6E29\u548C\u7684\u8865\u5242\u5EFA\u8BAE(\u5982\u9499\u7C89/\u9C7C\u6CB9\uFF0C\u975E\u5FC5\u987B\u53E3\u543B)\uFF1B\u8F93\u51FAJSON\u6570\u7EC4\uFF0C\u6BCF\u9879\u542B {title, period(week|month|future), suggested_date, reason, category(\u75AB\u82D7|\u9A71\u866B|\u5582\u517B|\u4F53\u68C0|\u5176\u4ED6)}\uFF1Breason\u572820\u5B57\u5185\u3001\u53E3\u543B\u6E29\u548C\uFF1B6-8\u9879\uFF1B\u53EA\u8F93\u51FAJSON\u6570\u7EC4\uFF0C\u4E0D\u8F93\u51FA\u5176\u4ED6\u4EFB\u4F55\u6587\u5B57\u3002`;
     try {
       const items = await askClaude(sys, [
@@ -937,9 +940,21 @@ function PetGuardian() {
     } }, "\u4FDD\u5B58\u5427\u5527\u56FE \u2193"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => setScreen("mine") }, "\u8FD4\u56DE\u300C\u6211\u7684\u300D"))));
   }
   if (screen === "archive") {
-    const w = [1.1, 1.4, Number(profile.weight) || 1.8];
-    const pts = w.map((v, i) => `${30 + i * 140},${120 - v * 40}`).join(" ");
-    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("mine"), title: `${petLabel}\u7684\u5065\u5EB7\u6863\u6848` }), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 8 } }, "\u4F53\u91CD\u66F2\u7EBF"), /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 340 140", style: { width: "100%" }, role: "img", "aria-label": "\u4F53\u91CD\u66F2\u7EBF" }, /* @__PURE__ */ React.createElement("polyline", { points: pts, fill: "none", stroke: C.teal, strokeWidth: "3" }), w.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: 30 + i * 140, cy: 120 - v * 40, r: "6", fill: C.paperLight, stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: 30 + i * 140, y: 120 - v * 40 - 12, fontSize: "12", textAnchor: "middle", fill: C.ink, fontFamily: F.mono }, v, "kg"))))), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 10 } }, "\u75AB\u82D7\u8BB0\u5F55"), [["\u9996\u9488\u75AB\u82D7", profile.done.includes("\u9996\u9488\u75AB\u82D7") || profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u7B2C\u4E8C\u9488\u75AB\u82D7", profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u72C2\u72AC\u75AB\u82D7", false]].map(([n, ok], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
+    const w = weights.map((x) => x.kg);
+    const wMin = Math.min(...w), wMax = Math.max(...w);
+    const span = Math.max(wMax - wMin, 0.5);
+    const X = (i) => w.length === 1 ? 170 : 30 + i * (280 / (w.length - 1));
+    const Y = (v) => 105 - (v - wMin) / span * 70;
+    const pts = w.map((v, i) => `${X(i)},${Y(v)}`).join(" ");
+    function addWeight() {
+      const kg = Math.round(Number(wInput) * 10) / 10;
+      if (!kg || kg <= 0 || kg > 30) return;
+      const d = new Date();
+      setWeights((ws) => [...ws.slice(-7), { kg, label: `${d.getMonth() + 1}/${d.getDate()}` }]);
+      setProfile((p) => ({ ...p, weight: String(kg) }));
+      setWInput("");
+    }
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("mine"), title: `${petLabel}\u7684\u5065\u5EB7\u6863\u6848` }), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 8 } }, "\u4F53\u91CD\u66F2\u7EBF"), weights.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft, padding: "18px 0", textAlign: "center" } }, "\u8FD8\u6CA1\u6709\u4F53\u91CD\u8BB0\u5F55\uFF0C\u5728\u4E0B\u65B9\u8BB0\u7B2C\u4E00\u7B14\u5427") : /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 340 140", style: { width: "100%" }, role: "img", "aria-label": "\u4F53\u91CD\u66F2\u7EBF" }, w.length > 1 && /* @__PURE__ */ React.createElement("polyline", { points: pts, fill: "none", stroke: C.teal, strokeWidth: "3" }), w.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: X(i), cy: Y(v), r: "6", fill: C.paperLight, stroke: C.teal, strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: X(i), y: Y(v) - 12, fontSize: "12", textAnchor: "middle", fill: C.ink, fontFamily: F.mono }, v, "kg"), /* @__PURE__ */ React.createElement("text", { x: X(i), y: 132, fontSize: "10", textAnchor: "middle", fill: C.inkSoft, fontFamily: F.mono }, weights[i].label))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } }, /* @__PURE__ */ React.createElement("input", { type: "number", step: "0.1", min: "0", placeholder: "\u4ECA\u5929\u79F0\u4E86\u591A\u91CD\uFF1F(kg)", value: wInput, onChange: (e) => setWInput(e.target.value), onKeyDown: (e) => { if (e.key === "Enter") addWeight(); }, style: { flex: 1, padding: "10px 12px", borderRadius: 10, fontSize: 14, border: `1px solid ${C.line}`, background: C.paperLight, fontFamily: F.body, color: C.ink, outline: "none" } }), /* @__PURE__ */ React.createElement("button", { onClick: addWeight, disabled: !wInput, style: { padding: "0 18px", borderRadius: 10, border: "none", background: wInput ? C.teal : C.line, color: "#fff", fontSize: 14, fontWeight: 700, cursor: wInput ? "pointer" : "not-allowed" } }, "\u8BB0\u4E00\u7B14")))), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 10 } }, "\u75AB\u82D7\u8BB0\u5F55"), [["\u9996\u9488\u75AB\u82D7", profile.done.includes("\u9996\u9488\u75AB\u82D7") || profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u7B2C\u4E8C\u9488\u75AB\u82D7", profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u72C2\u72AC\u75AB\u82D7", false]].map(([n, ok], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
       display: "flex",
       justifyContent: "space-between",
       padding: "9px 0",
