@@ -57,7 +57,13 @@
   th, td { padding: 1.6vh 1.4vw; text-align: left; border-bottom: 1px solid var(--line); }
   th { background: var(--tealSoft); color: var(--ink); font-size: 2vh; }
   @media print {
-    .slide { display: flex !important; page-break-after: always; height: 100vh; }
+    @page { size: 338.7mm 190.5mm; margin: 0; }
+    html, body { height: auto; background: #fff; }
+    .slide {
+      display: flex !important; page-break-after: always;
+      width: 338.7mm; height: 190.5mm; padding: 14mm 26mm;
+    }
+    .slide:last-of-type { page-break-after: avoid; }
     .kbd { display: none; }
   }
 </style>
