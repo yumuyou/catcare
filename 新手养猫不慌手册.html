@@ -8,10 +8,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <style>
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #F4F7FA; }
+  html, body { margin: 0; padding: 0; background: #EAF6FD; }
   #root { min-height: 100vh; }
   button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible {
-    outline: 2px solid #12A5B8; outline-offset: 2px;
+    outline: 2px solid #00B4E6; outline-offset: 2px;
   }
   input, textarea, button { font: inherit; }
 </style>
@@ -21,17 +21,17 @@
 <script>
 const { useState, useRef, useEffect } = React;
 const C = {
-  paper: "#F4F7FA",
+  paper: "#EAF6FD",
   paperLight: "#FFFFFF",
-  ink: "#16324A",
-  inkSoft: "#6E8296",
-  teal: "#12A5B8",
-  tealSoft: "#E0F3F6",
-  verm: "#E5504F",
-  vermSoft: "#FDEAEA",
-  yellow: "#F0A02F",
-  yellowSoft: "#FDF3E0",
-  line: "#E3EAF1"
+  ink: "#1B3F6E",
+  inkSoft: "#5F87AD",
+  teal: "#00B4E6",
+  tealSoft: "#DCF3FC",
+  verm: "#FF5D5D",
+  vermSoft: "#FFE9E9",
+  yellow: "#FFAA26",
+  yellowSoft: "#FFF4DB",
+  line: "#D6EBF7"
 };
 const F = {
   display: '"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif',
@@ -183,11 +183,11 @@ function AMapView({ hospitals, fallback }) {
     loadAMap().then((AMap) => {
       if (dead || !boxRef.current) return;
       map = new AMap.Map(boxRef.current, { center: USER_POS, zoom: 14, resizeEnable: true });
-      new AMap.CircleMarker({ center: USER_POS, radius: 8, fillColor: "#12A5B8", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, zIndex: 20, map });
+      new AMap.CircleMarker({ center: USER_POS, radius: 8, fillColor: "#00B4E6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, zIndex: 20, map });
       hospitals.forEach((h) => {
         if (!h.lng) return;
         const m = new AMap.Marker({ position: [h.lng, h.lat], title: h.name, map });
-        m.setLabel({ direction: "top", offset: new AMap.Pixel(0, -4), content: `<div style="font-size:11px;padding:2px 6px;border-radius:6px;border:1px solid #E3EAF1;background:${h.is24h ? "#E5504F" : "#fff"};color:${h.is24h ? "#fff" : "#16324A"};white-space:nowrap">${h.is24h ? "24h \u6025\u8BCA" : h.name.slice(0, 6)}</div>` });
+        m.setLabel({ direction: "top", offset: new AMap.Pixel(0, -4), content: `<div style="font-size:11px;padding:2px 6px;border-radius:6px;border:1px solid #D6EBF7;background:${h.is24h ? "#FF5D5D" : "#fff"};color:${h.is24h ? "#fff" : "#1B3F6E"};white-space:nowrap">${h.is24h ? "24h \u6025\u8BCA" : h.name.slice(0, 6)}</div>` });
       });
       setState("ok");
     }).catch(() => { if (!dead) setState("fail"); });
@@ -225,7 +225,7 @@ function PerforatedCard({ children, style }) {
     background: C.paperLight,
     border: `1px solid ${C.line}`,
     borderRadius: 16,
-    boxShadow: "0 2px 10px rgba(22,50,74,.06)",
+    boxShadow: "0 2px 10px rgba(27,63,110,.07)",
     ...style
   } }, children);
 }
@@ -243,8 +243,8 @@ function Btn({ children, onClick, variant = "primary", disabled, style }) {
     opacity: disabled ? 0.45 : 1
   };
   const variants = {
-    primary: { background: C.teal, color: "#fff", boxShadow: "0 4px 14px rgba(18,165,184,.35)" },
-    ink: { background: C.ink, color: "#fff", boxShadow: "0 4px 14px rgba(22,50,74,.22)" },
+    primary: { background: "linear-gradient(135deg,#2BD9F5 0%,#0A97E8 100%)", color: "#fff", boxShadow: "0 5px 16px rgba(0,180,230,.45)" },
+    ink: { background: C.ink, color: "#fff", boxShadow: "0 4px 14px rgba(27,63,110,.25)" },
     ghost: { background: "transparent", color: C.teal, boxShadow: "none", border: `1.5px dashed ${C.teal}` }
   };
   return /* @__PURE__ */ React.createElement(
@@ -475,13 +475,13 @@ function PetGuardian() {
   }, [screen, profile.photo, profile.type, petLabel]);
   const paperBg = {
     minHeight: "100vh",
-    background: C.paper,
+    background: "linear-gradient(180deg,#DFF3FE 0%,#EAF6FD 220px)",
     fontFamily: F.body,
     color: C.ink,
     display: "flex",
     justifyContent: "center"
   };
-  const phone = { width: "100%", maxWidth: 420, padding: "20px 18px 96px", position: "relative", minHeight: "100vh", background: C.paper, boxShadow: "0 0 40px rgba(22,50,74,.10)" };
+  const phone = { width: "100%", maxWidth: 420, padding: "20px 18px 96px", position: "relative", minHeight: "100vh", background: C.paper, boxShadow: "0 0 40px rgba(27,63,110,.10)" };
   function TopBar({ back, title }) {
     return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("button", { onClick: back, "aria-label": "\u8FD4\u56DE", style: {
       border: `1px solid ${C.line}`,
@@ -552,7 +552,7 @@ function PetGuardian() {
       fontSize: 15,
       fontWeight: 600,
       background: profile.lifestyle === v ? C.tealSoft : C.paperLight,
-      boxShadow: profile.lifestyle === v ? "0 3px 10px rgba(18,165,184,.25)" : "none"
+      boxShadow: profile.lifestyle === v ? "0 3px 10px rgba(0,180,230,.30)" : "none"
     } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 44 } }, e), l)))), step === 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: 0 } }, "\u5B83\u53EB\u4EC0\u4E48\u540D\u5B57\uFF1F"), /* @__PURE__ */ React.createElement(
       "input",
       {
@@ -848,7 +848,7 @@ function PetGuardian() {
       background: C.vermSoft,
       border: `1px solid ${C.line}`,
       borderRadius: 12,
-      boxShadow: "0 2px 8px rgba(22,50,74,.08)",
+      boxShadow: "0 2px 8px rgba(27,63,110,.09)",
       padding: "14px 16px",
       fontFamily: F.body,
       display: "flex",
