@@ -320,6 +320,7 @@ function PetGuardian() {
   const [kbQuery, setKbQuery] = useState("");
   const [kbBusy, setKbBusy] = useState(false);
   const [kbAnswer, setKbAnswer] = useState(null);
+  const [kbOpen, setKbOpen] = useState("");
   const [chat, setChat] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatBusy, setChatBusy] = useState(false);
@@ -743,8 +744,17 @@ function PetGuardian() {
           kbAnswer.fallback && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.inkSoft, fontFamily: F.mono, marginTop: 8 } }, "\u26A1 \u63A5\u53E3\u672A\u8FDE\u901A\uFF0C\u5DF2\u76F4\u63A5\u5C55\u793A\u6700\u76F8\u5173\u6761\u76EE"))),
       /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16 } },
         /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 4 } }, "\u77E5\u8BC6\u5E93 \u00B7 \u5DF2\u6536\u5F55 ", KB.length, " \u6761"),
-        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, marginBottom: 10, fontFamily: F.mono } }, "\u70B9\u6761\u76EE\u76F4\u63A5\u67E5\u770B"),
-        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, KB.map((e) => /* @__PURE__ */ React.createElement("button", { key: e.title, onClick: () => { setKbAnswer({ q: e.title, answer: e.content, hits: [e] }); window.scrollTo({ top: 0, behavior: "smooth" }); }, style: { fontSize: 12.5, padding: "7px 12px", borderRadius: 999, border: `1px solid ${C.line}`, background: C.paperLight, cursor: "pointer", color: C.ink } }, e.title)))),
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, marginBottom: 6, fontFamily: F.mono } }, "\u70B9\u6807\u9898\u5C55\u5F00\uFF0C\u518D\u70B9\u6536\u8D77"),
+        /* @__PURE__ */ React.createElement("div", null, KB.map((e, i) => {
+          const open = kbOpen === e.title;
+          return /* @__PURE__ */ React.createElement("div", { key: e.title, style: { borderTop: i ? `1px solid ${C.line}` : "none" } },
+            /* @__PURE__ */ React.createElement("button", { onClick: () => setKbOpen(open ? "" : e.title), "aria-expanded": open, style: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "11px 2px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" } },
+              /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: open ? 700 : 500, color: open ? C.teal : C.ink } }, e.title),
+              /* @__PURE__ */ React.createElement("span", { style: { color: C.inkSoft, fontSize: 12, flexShrink: 0, transform: open ? "rotate(90deg)" : "none", transition: "transform .15s" } }, "\u276F")),
+            open && /* @__PURE__ */ React.createElement("div", { style: { padding: "0 2px 12px" } },
+              /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, lineHeight: 1.8, color: C.ink } }, e.content),
+              /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" } }, e.tags.slice(0, 4).map((t) => /* @__PURE__ */ React.createElement("span", { key: t, style: chipLink }, "#", t)))));
+        }))),
       /* @__PURE__ */ React.createElement(TabBar, { active: "knowledge", go: setScreen })));
   }
   if (screen === "hospitals") {
