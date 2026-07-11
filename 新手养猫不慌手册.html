@@ -93,6 +93,44 @@ async function askClaude(system, messages) {
   const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
   return JSON.parse(text.replace(/```json|```/g, "").trim());
 }
+const KB = [
+  { title: "猫三联疫苗怎么打", content: "首免8周龄起，间隔3-4周共打2-3针完成基础免疫，之后每1-3年加强一针。会出门的猫必须加打狂犬疫苗。接种前要确保猫咪健康无感冒症状。", tags: ["疫苗", "免疫", "猫三联", "狂犬", "打针", "几针"] },
+  { title: "驱虫的频率", content: "体内驱虫一般每3个月一次；体外驱虫夏季建议每月一次。家里有狗或猫会出门的，体外驱虫要更勤。体外滴剂滴在颈后舔不到的位置，48小时内别洗澡。", tags: ["驱虫", "体内", "体外", "跳蚤", "虫", "驱一次"] },
+  { title: "换猫粮要用七天过渡法", content: "突然换粮容易软便。第1-2天新粮占1/4，第3-4天占一半，第5-6天占3/4，第7天完全换新。期间观察便便状态，异常就放慢节奏。", tags: ["换粮", "猫粮", "换食", "过渡"] },
+  { title: "软便怎么办", content: "软便是新手最常遇到的问题，常见原因：换粮过快、肠胃敏感、寄生虫。精神食欲正常可先观察、试益生菌或肠道处方粮；持续3天以上、带血或伴呕吐要就医。", tags: ["软便", "拉稀", "拉肚子", "腹泻", "便便", "益生菌"] },
+  { title: "猫呕吐要紧吗", content: "单次呕吐且精神正常，多是毛球或进食过快，通常观察即可；吐毛可用化毛膏或猫草预防。一天吐多次、吐血丝或伴精神差食欲废绝，尽快就医。", tags: ["呕吐", "吐", "毛球", "化毛膏", "干呕"] },
+  { title: "公猫尿不出来是急症", content: "公猫频繁蹲砂盆却没有尿、嚎叫、舔尿道口，高度怀疑尿路堵塞——这是猫科最凶险的急症之一，数小时到两天内可致命，立即送医，不要观望。", tags: ["尿闭", "公猫", "泌尿", "急症", "尿不出", "尿", "砂盆"] },
+  { title: "从胡须看猫的状态", content: "放松时胡须自然下垂微张；胡须持续用力前压、配合眯眼弓背，可能在忍痛。持续忍痛姿态建议就医检查。观察胡须是低成本的健康信号。", tags: ["胡须", "胡子", "忍痛", "疼痛", "生病", "观察"] },
+  { title: "换毛季要梳毛", content: "春秋换毛季每天梳毛，长毛猫不梳会打结成毡、还会吞入过多毛引发毛球。短毛猫每周2-3次即可。梳下来的浮毛越多说明越该梳。", tags: ["梳毛", "换毛", "长毛猫", "掉毛", "打结", "毛"] },
+  { title: "绝育的时机", content: "公猫一般6月龄后、母猫建议在首次发情前后（医生评估）。绝育能显著降低生殖系统疾病和走失打架风险。术后戴好伊丽莎白圈防舔伤口。", tags: ["绝育", "发情", "手术", "叫春"] },
+  { title: "猫的危险食物清单", content: "洋葱大蒜（溶血）、巧克力咖啡（中毒）、葡萄（伤肾）、木糖醇、生蛋生肉需谨慎；百合花对猫剧毒，家里千万别摆。误食后带包装尽快就医。", tags: ["中毒", "食物", "百合", "洋葱", "巧克力", "葡萄", "禁忌", "不能吃", "误食", "花"] },
+  { title: "猫应激了怎么办", content: "搬家、巨响、陌生人/新宠物都可能引发应激：躲藏、拒食、乱尿。给安静的躲避空间，别强行抱出。拒食超过24小时或持续萎靡需就医，幼猫更要从严。", tags: ["应激", "躲藏", "拒食", "不吃", "搬家", "害怕"] },
+  { title: "呼噜声和踩奶是什么意思", content: "呼噜多表示放松满足（偶尔也见于疼痛自我安抚），踩奶是幼年吃奶动作的延续、表达信任。摸头、下巴、胡子根部多数猫都喜欢；肚子和尾巴慎摸。", tags: ["呼噜", "踩奶", "性格", "抚摸", "摸", "喜欢"] },
+  { title: "怎么判断猫胖不胖", content: "俯视有腰线、侧看腹部微收、手摸能摸到肋骨但看不见肋骨，就是理想体态。定期称重记录，成年猫体重突然增减都值得注意。", tags: ["体重", "肥胖", "胖", "瘦", "减肥", "体态"] },
+  { title: "幼猫怎么喂", content: "2月龄幼猫吃泡软的幼猫粮，少食多餐每天4次左右；4月龄可逐渐过渡到干粮每天3次；随时供应干净饮水。别喂牛奶，乳糖不耐受会拉稀，要喂就选羊奶粉。", tags: ["幼猫", "喂养", "喂", "泡粮", "羊奶", "牛奶", "奶", "几顿"] }
+];
+function kbGrams(t) {
+  const g = new Set();
+  const x = t.replace(/\s+/g, "");
+  for (let i = 0; i < x.length - 1; i++) g.add(x.slice(i, i + 2));
+  return g;
+}
+const KB_STOP = ["怎么办", "怎么样", "怎么", "如何", "为什么", "什么", "可不可以", "能不能", "可以", "应该", "需要", "最近", "一直", "总是", "好像", "有点", "家里", "我家", "猫咪", "小猫", "了吗", "吗", "呢", "的", "了", "啊"];
+function kbSearch(q, k) {
+  let qc = q;
+  KB_STOP.forEach((w) => { qc = qc.split(w).join(""); });
+  if (!qc) qc = q;
+  const qg = kbGrams(qc);
+  return KB.map((e) => {
+    const eg = kbGrams(e.title + e.content + e.tags.join(""));
+    let sc = 0;
+    qg.forEach((g) => { if (eg.has(g)) sc++; });
+    e.tags.forEach((tag) => { if (qc.includes(tag)) sc += tag.length >= 2 ? 4 : 2; });
+    const tg = kbGrams(e.title);
+    qg.forEach((g) => { if (tg.has(g)) sc += 2; });
+    return { ...e, score: sc };
+  }).filter((e) => e.score > 0).sort((a, b) => b.score - a.score).slice(0, k);
+}
 const HOWTO_FALLBACK = {
   "疫苗": ["提前电话预约，确认有苗", "接种前猫咪需健康、无感冒症状", "接种后留观30分钟，24小时内注意精神"],
   "驱虫": ["按体重选剂量，分清体内/体外", "体外滴颈后48小时不洗澡", "驱虫后留意有无呕吐软便"],
@@ -209,6 +247,7 @@ function TabBar({ active, go }) {
   const tabs = [
     ["timeline", "\u{1F4C5}", "\u5065\u5EB7"],
     ["consult", "\u{1FA7A}", "\u95EE\u8BCA"],
+    ["knowledge", "\u{1F4DA}", "\u79D1\u666E"],
     ["hospitals", "\u{1F3E5}", "\u533B\u9662"],
     ["mine", "\u{1F43E}", "\u6211\u7684"]
   ];
@@ -262,6 +301,9 @@ function PetGuardian() {
   const [doneKeys, setDoneKeys] = useState({});
   const [openItem, setOpenItem] = useState("");
   const [howto, setHowto] = useState({});
+  const [kbQuery, setKbQuery] = useState("");
+  const [kbBusy, setKbBusy] = useState(false);
+  const [kbAnswer, setKbAnswer] = useState(null);
   const [chat, setChat] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatBusy, setChatBusy] = useState(false);
@@ -310,6 +352,29 @@ function PetGuardian() {
     } catch {
       setHowto((h) => ({ ...h, [t.title]: { steps: HOWTO_FALLBACK[t.category] || HOWTO_FALLBACK["其他"], tip: "" } }));
     }
+  }
+  async function askKB(qRaw) {
+    const q = qRaw.trim();
+    if (!q || kbBusy) return;
+    setKbBusy(true);
+    const hits = kbSearch(q, 3);
+    setKbAnswer({ loading: true, q, hits });
+    if (!hits.length) {
+      setKbAnswer({ q, answer: "\u8FD9\u4E2A\u95EE\u9898\u77E5\u8BC6\u5E93\u8FD8\u6CA1\u6536\u5F55\uFF0C\u53EF\u4EE5\u53BB\u95EE\u8BCA\u9875\u95EE\u95EE AI \u533B\u751F\u52A9\u624B\u3002", hits: [], miss: true });
+      setKbBusy(false);
+      return;
+    }
+    const ctx = hits.map((h, i) => `\u3010${i + 1}\u00B7${h.title}\u3011${h.content}`).join("\n");
+    const sys = `\u4F60\u662F\u732B\u54AA\u79D1\u666E\u52A9\u624B\u3002\u4EC5\u4F9D\u636E\u4E0B\u5217\u77E5\u8BC6\u5E93\u6761\u76EE\u56DE\u7B54\uFF0C\u4E0D\u8981\u7F16\u9020\u6761\u76EE\u5916\u7684\u5185\u5BB9\uFF1B\u6761\u76EE\u6CA1\u8986\u76D6\u5C31\u8BF4\u6CA1\u6536\u5F55\u3002\u7ED3\u5408\u6863\u6848\u53E3\u543B\u53CB\u597D\uFF0C120\u5B57\u5185\u3002\u732B\u54AA\u6863\u6848\uFF1A${JSON.stringify(profile, (k, v) => k === "photo" ? void 0 : v)}\u3002\u77E5\u8BC6\u5E93\uFF1A\n${ctx}\n\u53EA\u8F93\u51FAJSON\uFF1A{"answer":"\u56DE\u7B54","used":[\u7528\u5230\u7684\u6761\u76EE\u5E8F\u53F7]}`;
+    try {
+      const out = await askClaude(sys, [{ role: "user", content: q }]);
+      if (!out || !out.answer) throw new Error("bad");
+      const used = Array.isArray(out.used) && out.used.length ? out.used.map((n) => hits[n - 1]).filter(Boolean) : hits;
+      setKbAnswer({ q, answer: out.answer, hits: used });
+    } catch {
+      setKbAnswer({ q, answer: hits[0].content, hits: [hits[0]], fallback: true });
+    }
+    setKbBusy(false);
   }
   async function sendConsult(text) {
     if (!text.trim() || chatBusy) return;
@@ -638,6 +703,33 @@ function PetGuardian() {
       setChat([]);
       setTriage(null);
     } }, "\u518D\u95EE\u4E00\u6B21"), /* @__PURE__ */ React.createElement(TabBar, { active: "consult", go: setScreen })));
+  }
+  if (screen === "knowledge") {
+    const today = KB[Math.floor(Date.now() / 864e5) % KB.length];
+    const kinput = { flex: 1, padding: "12px 14px", borderRadius: 12, fontSize: 14.5, border: `1px solid ${C.line}`, background: C.paperLight, fontFamily: F.body, color: C.ink, outline: "none" };
+    const chipLink = { fontSize: 11, fontFamily: F.mono, color: C.teal, background: C.tealSoft, borderRadius: 999, padding: "3px 10px" };
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } },
+      /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u6BCF\u65E5\u79D1\u666E"), /* @__PURE__ */ React.createElement(Eyebrow, null, "CAT 101")),
+      /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 16, background: C.tealSoft } },
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 11, color: C.teal, fontWeight: 700 } }, "\u{1F4C5} \u4ECA\u65E5\u4EFD\u732B\u77E5\u8BC6 \u00B7 \u6BCF\u5929\u66F4\u65B0"),
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 17, marginTop: 6 } }, today.title),
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, lineHeight: 1.8, marginTop: 6 } }, today.content),
+        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" } }, today.tags.slice(0, 4).map((t) => /* @__PURE__ */ React.createElement("span", { key: t, style: chipLink }, "#", t)))),
+      /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
+        /* @__PURE__ */ React.createElement("input", { style: kinput, placeholder: "\u95EE\u70B9\u517B\u732B\u77E5\u8BC6\uFF0C\u5982\uFF1A\u80FD\u5582\u725B\u5976\u5417", value: kbQuery, onChange: (e) => setKbQuery(e.target.value), onKeyDown: (e) => { if (e.key === "Enter") { askKB(kbQuery); } } }),
+        /* @__PURE__ */ React.createElement(Btn, { style: { width: 74 }, disabled: kbBusy, onClick: () => askKB(kbQuery) }, kbBusy ? "\u2026" : "\u67E5")),
+      /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u57FA\u4E8E\u56E2\u961F\u6574\u7406\u7684\u732B\u79D1\u77E5\u8BC6\u5E93\u68C0\u7D22\u751F\u6210\uFF08RAG\uFF09\u00B7 \u56DE\u7B54\u5747\u6807\u6CE8\u6765\u6E90 \u00B7 \u4E0D\u4EE3\u66FF\u517D\u533B"),
+      kbAnswer && /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 16 } },
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.inkSoft, fontFamily: F.mono } }, "\u300C", kbAnswer.q, "\u300D"),
+        kbAnswer.loading ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft, marginTop: 8 } }, "\u68C0\u7D22\u5230 ", kbAnswer.hits.length, " \u6761\u76F8\u5173\u77E5\u8BC6\uFF0C\u6B63\u5728\u751F\u6210\u56DE\u7B54\u2026") : /* @__PURE__ */ React.createElement(React.Fragment, null,
+          /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, lineHeight: 1.85, marginTop: 8 } }, kbAnswer.answer),
+          kbAnswer.hits.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono } }, "\u{1F4CE} \u6765\u6E90"), kbAnswer.hits.map((h) => /* @__PURE__ */ React.createElement("span", { key: h.title, style: chipLink }, h.title))),
+          kbAnswer.fallback && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.inkSoft, fontFamily: F.mono, marginTop: 8 } }, "\u26A1 \u63A5\u53E3\u672A\u8FDE\u901A\uFF0C\u5DF2\u76F4\u63A5\u5C55\u793A\u6700\u76F8\u5173\u6761\u76EE"))),
+      /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16 } },
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 4 } }, "\u77E5\u8BC6\u5E93 \u00B7 \u5DF2\u6536\u5F55 ", KB.length, " \u6761"),
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, marginBottom: 10, fontFamily: F.mono } }, "\u70B9\u6761\u76EE\u76F4\u63A5\u67E5\u770B"),
+        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, KB.map((e) => /* @__PURE__ */ React.createElement("button", { key: e.title, onClick: () => { setKbAnswer({ q: e.title, answer: e.content, hits: [e] }); window.scrollTo({ top: 0, behavior: "smooth" }); }, style: { fontSize: 12.5, padding: "7px 12px", borderRadius: 999, border: `1px solid ${C.line}`, background: C.paperLight, cursor: "pointer", color: C.ink } }, e.title)))),
+      /* @__PURE__ */ React.createElement(TabBar, { active: "knowledge", go: setScreen })));
   }
   if (screen === "hospitals") {
     const sorted = [...HOSPITALS].sort((a, b) => (b.is24h ? 1 : 0) - (a.is24h ? 1 : 0));
