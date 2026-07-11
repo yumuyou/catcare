@@ -11,7 +11,7 @@
   html, body { margin: 0; padding: 0; background: #F4F7FA; }
   #root { min-height: 100vh; }
   button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible {
-    outline: 2px solid #0FA98E; outline-offset: 2px;
+    outline: 2px solid #12A5B8; outline-offset: 2px;
   }
   input, textarea, button { font: inherit; }
 </style>
@@ -25,8 +25,8 @@ const C = {
   paperLight: "#FFFFFF",
   ink: "#16324A",
   inkSoft: "#6E8296",
-  teal: "#0FA98E",
-  tealSoft: "#E1F5F0",
+  teal: "#12A5B8",
+  tealSoft: "#E0F3F6",
   verm: "#E5504F",
   vermSoft: "#FDEAEA",
   yellow: "#F0A02F",
@@ -138,7 +138,7 @@ function Btn({ children, onClick, variant = "primary", disabled, style }) {
     opacity: disabled ? 0.45 : 1
   };
   const variants = {
-    primary: { background: C.teal, color: "#fff", boxShadow: "0 4px 14px rgba(15,169,142,.35)" },
+    primary: { background: C.teal, color: "#fff", boxShadow: "0 4px 14px rgba(18,165,184,.35)" },
     ink: { background: C.ink, color: "#fff", boxShadow: "0 4px 14px rgba(22,50,74,.22)" },
     ghost: { background: "transparent", color: C.teal, boxShadow: "none", border: `1.5px dashed ${C.teal}` }
   };
@@ -398,7 +398,7 @@ function PetGuardian() {
       fontSize: 15,
       fontWeight: 600,
       background: profile.lifestyle === v ? C.tealSoft : C.paperLight,
-      boxShadow: profile.lifestyle === v ? "0 3px 10px rgba(15,169,142,.25)" : "none"
+      boxShadow: profile.lifestyle === v ? "0 3px 10px rgba(18,165,184,.25)" : "none"
     } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 44 } }, e), l)))), step === 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: 0 } }, "\u5B83\u53EB\u4EC0\u4E48\u540D\u5B57\uFF1F"), /* @__PURE__ */ React.createElement(
       "input",
       {
