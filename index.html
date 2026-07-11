@@ -225,7 +225,32 @@ const HOWTO_FALLBACK = {
   "医嘱": ["严格按医生说明执行", "症状反复或加重及时复诊"],
   "其他": ["按建议时间完成", "完成后回来打个勾"]
 };
-const USER_POS = [116.3316, 39.7905];
+const XHM_CENTER = [116.3316, 39.7905];
+function haversineKm(a, b) {
+  const R = 6371, rad = Math.PI / 180;
+  const dLat = (b[1] - a[1]) * rad, dLng = (b[0] - a[0]) * rad;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * rad) * Math.cos(b[1] * rad) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(s));
+}
+function fmtDist(km) { return km < 1 ? Math.round(km * 1000) + "m" : (Math.round(km * 10) / 10) + "km"; }
+// 真实定位：enabled 为 true 时才请求（避免一进首页就弹授权）；拿不到就回退镇中心
+function useGeoPos(enabled) {
+  const [pos, setPos] = useState(null);
+  const [state, setState] = useState("idle");
+  useEffect(() => {
+    if (!enabled || pos || state === "denied" || state === "unavailable") return;
+    if (!navigator.geolocation) { setState("unavailable"); return; }
+    let dead = false;
+    setState("asking");
+    navigator.geolocation.getCurrentPosition(
+      (r) => { if (!dead) { setPos([r.coords.longitude, r.coords.latitude]); setState("ok"); } },
+      () => { if (!dead) setState("denied"); },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    );
+    return () => { dead = true; };
+  }, [enabled]);
+  return [pos, state];
+}
 let amapPromise = null;
 function loadAMap() {
   const key = localStorage.getItem("cc_amap_key") || "";
@@ -245,26 +270,31 @@ function loadAMap() {
   }
   return amapPromise;
 }
-function AMapView({ hospitals, fallback }) {
+function AMapView({ hospitals, fallback, userPos, located }) {
   const boxRef = useRef(null);
   const [state, setState] = useState("loading");
+  const center = userPos || XHM_CENTER;
   useEffect(() => {
     let dead = false, map = null;
     loadAMap().then((AMap) => {
       if (dead || !boxRef.current) return;
-      map = new AMap.Map(boxRef.current, { center: USER_POS, zoom: 14, resizeEnable: true });
-      new AMap.CircleMarker({ center: USER_POS, radius: 8, fillColor: "#00C2CE", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, zIndex: 20, map });
+      map = new AMap.Map(boxRef.current, { center, zoom: 14, resizeEnable: true });
+      new AMap.CircleMarker({ center, radius: 8, fillColor: "#00C2CE", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, zIndex: 20, map });
+      const fit = [center];
       hospitals.forEach((h) => {
         if (!h.lng) return;
+        fit.push([h.lng, h.lat]);
         const m = new AMap.Marker({ position: [h.lng, h.lat], title: h.name, map });
         m.setLabel({ direction: "top", offset: new AMap.Pixel(0, -4), content: `<div style="font-size:11px;padding:2px 6px;border-radius:6px;border:1px solid #D5EEEC;background:${h.is24h ? "#FF5D5D" : "#fff"};color:${h.is24h ? "#fff" : "#175A5E"};white-space:nowrap">${h.is24h ? "24h \u6025\u8BCA" : h.name.slice(0, 6)}</div>` });
       });
+      // \u5B9A\u4F4D\u79BB\u9547\u5B50\u8FDC\u65F6\u81EA\u52A8\u7F29\u653E\u5230\u80FD\u540C\u65F6\u770B\u5230\u4EBA\u548C\u533B\u9662
+      map.setFitView(null, false, [30, 30, 30, 30]);
       setState("ok");
     }).catch(() => { if (!dead) setState("fail"); });
     return () => { dead = true; if (map) map.destroy(); };
-  }, []);
+  }, [userPos]);
   if (state === "fail") return fallback;
-  return /* @__PURE__ */ React.createElement("div", { style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { ref: boxRef, style: { width: "100%", height: 190 } }), state === "loading" && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.inkSoft, background: C.paper } }, "\u5730\u56FE\u52A0\u8F7D\u4E2D\u2026"));
+  return /* @__PURE__ */ React.createElement("div", { style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { ref: boxRef, style: { width: "100%", height: 190 } }), state === "ok" && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: 8, bottom: 8, fontSize: 10.5, fontFamily: F.mono, padding: "3px 8px", borderRadius: 6, background: "rgba(255,255,255,.92)", color: located ? C.teal : C.inkSoft, border: `1px solid ${C.line}` } }, located ? "\u25C9 \u5DF2\u5B9A\u4F4D\u5230\u4F60\u7684\u4F4D\u7F6E" : "\u25CB \u672A\u5B9A\u4F4D \xB7 \u663E\u793A\u897F\u7EA2\u95E8\u9547\u4E2D\u5FC3"), state === "loading" && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.inkSoft, background: C.paper } }, "\u5730\u56FE\u52A0\u8F7D\u4E2D\u2026"));
 }
 function Stamp({ text, color = C.teal, rotate = -8 }) {
   return /* @__PURE__ */ React.createElement("span", { style: {
@@ -396,6 +426,7 @@ function PetGuardian() {
   const [wInput, setWInput] = useState("");
   const chatEndRef = useRef(null);
   const prevActiveRef = useRef(-1);
+  const [geoPos, geoState] = useGeoPos(screen === "hospitals");
   const fileRef = useRef(null);
   const reportRef = useRef(null);
   const canvasRef = useRef(null);
@@ -879,8 +910,12 @@ function PetGuardian() {
       /* @__PURE__ */ React.createElement(TabBar, { active: "knowledge", go: setScreen })));
   }
   if (screen === "hospitals") {
-    const sorted = [...HOSPITALS].sort((a, b) => (b.is24h ? 1 : 0) - (a.is24h ? 1 : 0));
-    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u897F\u7EA2\u95E8\u9547 \xB7 \u5BA0\u7269\u533B\u9662"), triage && /* @__PURE__ */ React.createElement(Stamp, { text: triage.level === "red" ? "\u6025\u8BCA\u4F18\u5148" : "\u5C3D\u5FEB\u5C31\u533B", rotate: 8 })), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 0, overflow: "hidden", marginBottom: 8 } }, /* @__PURE__ */ React.createElement(AMapView, { hospitals: sorted, fallback: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 380 190", style: { display: "block", width: "100%", background: "#E8F0F6" }, role: "img", "aria-label": "\u897F\u7EA2\u95E8\u9547\u533B\u9662\u5206\u5E03\u793A\u610F\u56FE" }, /* @__PURE__ */ React.createElement("path", { d: "M0,95 C90,70 160,120 380,85", stroke: C.line, strokeWidth: "14", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M120,0 C130,80 110,130 140,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M250,0 C240,70 270,120 255,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "26", fontSize: "13", fill: C.inkSoft, fontFamily: F.display }, "\u897F\u7EA2\u95E8\u9547\uFF08\u793A\u610F\uFF09"), /* @__PURE__ */ React.createElement("circle", { cx: "190", cy: "100", r: "7", fill: C.teal, stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: "202", y: "104", fontSize: "11", fill: C.ink }, "\u4F60\u5728\u8FD9"), [[95, 60, true], [280, 55, false], [70, 140, false], [305, 130, false], [180, 160, false], [235, 92, false]].map(([x, y, is24], i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: x, cy: y, r: is24 ? 9 : 6.5, fill: is24 ? C.verm : C.paperLight, stroke: "#fff", strokeWidth: "2" }), is24 && /* @__PURE__ */ React.createElement("text", { x: x + 13, y: y + 4, fontSize: "11", fontWeight: "700", fill: C.verm }, "24h"))))})), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u6309 24\u5C0F\u65F6\u4F18\u5148 + \u8DDD\u79BB \u6392\u5E8F \uFF5C \u672A\u914D\u7F6E\u9AD8\u5FB7key\u65F6\u663E\u793A\u793A\u610F\u56FE"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, sorted.map((h, i) => /* @__PURE__ */ React.createElement(PerforatedCard, { key: i, style: {
+    const origin = geoPos || XHM_CENTER;
+    const sorted = HOSPITALS.map((h) => {
+      const km = h.lng ? haversineKm(origin, [h.lng, h.lat]) : null;
+      return { ...h, km, dist: km == null ? h.dist : fmtDist(km) };
+    }).sort((a, b) => (b.is24h ? 1 : 0) - (a.is24h ? 1 : 0) || (a.km ?? 99) - (b.km ?? 99));
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u897F\u7EA2\u95E8\u9547 \xB7 \u5BA0\u7269\u533B\u9662"), triage && /* @__PURE__ */ React.createElement(Stamp, { text: triage.level === "red" ? "\u6025\u8BCA\u4F18\u5148" : "\u5C3D\u5FEB\u5C31\u533B", rotate: 8 })), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 0, overflow: "hidden", marginBottom: 8 } }, /* @__PURE__ */ React.createElement(AMapView, { userPos: geoPos, located: geoState === "ok", hospitals: sorted, fallback: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 380 190", style: { display: "block", width: "100%", background: "#E8F0F6" }, role: "img", "aria-label": "\u897F\u7EA2\u95E8\u9547\u533B\u9662\u5206\u5E03\u793A\u610F\u56FE" }, /* @__PURE__ */ React.createElement("path", { d: "M0,95 C90,70 160,120 380,85", stroke: C.line, strokeWidth: "14", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M120,0 C130,80 110,130 140,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M250,0 C240,70 270,120 255,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "26", fontSize: "13", fill: C.inkSoft, fontFamily: F.display }, "\u897F\u7EA2\u95E8\u9547\uFF08\u793A\u610F\uFF09"), /* @__PURE__ */ React.createElement("circle", { cx: "190", cy: "100", r: "7", fill: C.teal, stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: "202", y: "104", fontSize: "11", fill: C.ink }, "\u4F60\u5728\u8FD9"), [[95, 60, true], [280, 55, false], [70, 140, false], [305, 130, false], [180, 160, false], [235, 92, false]].map(([x, y, is24], i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: x, cy: y, r: is24 ? 9 : 6.5, fill: is24 ? C.verm : C.paperLight, stroke: "#fff", strokeWidth: "2" }), is24 && /* @__PURE__ */ React.createElement("text", { x: x + 13, y: y + 4, fontSize: "11", fontWeight: "700", fill: C.verm }, "24h"))))})), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u6309 24\u5C0F\u65F6\u4F18\u5148 + \u8DDD\u79BB \u6392\u5E8F \uFF5C ", geoState === "ok" ? "\u8DDD\u79BB\u6309\u4F60\u7684\u5B9E\u65F6\u4F4D\u7F6E\u8BA1\u7B97" : geoState === "asking" ? "\u6B63\u5728\u83B7\u53D6\u5B9A\u4F4D\u2026" : "\u672A\u6388\u6743\u5B9A\u4F4D\uFF0C\u8DDD\u79BB\u6309\u9547\u4E2D\u5FC3\u4F30\u7B97"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, sorted.map((h, i) => /* @__PURE__ */ React.createElement(PerforatedCard, { key: i, style: {
       padding: 14,
       borderColor: h.is24h ? C.verm : C.ink,
       borderWidth: h.is24h ? 2 : 1.5,
