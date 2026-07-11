@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CatCare · 路演</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --paper: #EBF8F7; --card: #FFFFFF; --ink: #175A5E; --soft: #5E9095;
+    --teal: #00C2CE; --tealSoft: #DDF6F5; --red: #FF5D5D; --redSoft: #FFE9E9;
+    --yellow: #FFAA26; --yellowSoft: #FFF4DB; --line: #D5EEEC;
+  }
+  html, body { height: 100%; background: #0e2a2c; font-family: "PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif; color: var(--ink); }
+  .slide {
+    width: 100vw; height: 100vh; display: none; flex-direction: column;
+    justify-content: center; padding: 7vh 9vw;
+    background: linear-gradient(180deg, #DFF6F4 0%, #EBF8F7 30%);
+    position: relative; overflow: hidden;
+  }
+  .slide.active { display: flex; }
+  .eyebrow { font-family: ui-monospace, Menlo, monospace; font-size: 1.7vh; letter-spacing: 3px; color: var(--teal); font-weight: 700; margin-bottom: 2vh; }
+  h1 { font-size: 8vh; line-height: 1.15; margin-bottom: 3vh; }
+  h2 { font-size: 5.6vh; line-height: 1.25; margin-bottom: 4vh; }
+  .accent { color: var(--teal); }
+  .red { color: var(--red); }
+  p.lead { font-size: 2.9vh; line-height: 1.75; color: var(--soft); max-width: 62vw; }
+  .cards { display: flex; gap: 2.4vw; margin-top: 1vh; }
+  .card {
+    flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+    padding: 3.4vh 2vw; box-shadow: 0 4px 18px rgba(23,90,94,.08);
+  }
+  .card .big { font-size: 4.6vh; margin-bottom: 1.2vh; }
+  .card b { font-size: 2.6vh; display: block; margin-bottom: 1vh; }
+  .card span { font-size: 2vh; line-height: 1.7; color: var(--soft); }
+  .flow { display: flex; align-items: center; gap: 1vw; margin-top: 2vh; flex-wrap: wrap; }
+  .step {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 2.4vh 1.6vw; text-align: center; box-shadow: 0 4px 14px rgba(23,90,94,.08); flex: 1;
+  }
+  .step .ic { font-size: 4.2vh; }
+  .step b { display: block; font-size: 2.2vh; margin-top: 1vh; }
+  .step span { font-size: 1.7vh; color: var(--soft); }
+  .arrow { font-size: 3.4vh; color: var(--teal); font-weight: 800; }
+  .pill { display: inline-block; background: var(--tealSoft); color: var(--teal); border-radius: 999px; padding: .7vh 1.4vw; font-size: 1.9vh; font-weight: 700; margin: 0 .6vw 1.2vh 0; }
+  .pill.r { background: var(--redSoft); color: var(--red); }
+  .pill.y { background: var(--yellowSoft); color: #C77700; }
+  ul.tick { list-style: none; font-size: 2.7vh; line-height: 2.1; }
+  ul.tick li::before { content: "✓  "; color: var(--teal); font-weight: 800; }
+  .num { font-size: 6.5vh; font-weight: 800; color: var(--teal); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2vw; align-items: start; }
+  .foot { position: absolute; bottom: 3.2vh; left: 9vw; right: 9vw; display: flex; justify-content: space-between; font-family: ui-monospace, Menlo, monospace; font-size: 1.5vh; color: var(--soft); }
+  .quote { border-left: 5px solid var(--teal); padding: 1.5vh 2vw; background: var(--card); border-radius: 0 16px 16px 0; font-size: 2.7vh; line-height: 1.8; box-shadow: 0 4px 14px rgba(23,90,94,.08); }
+  .kbd { position: fixed; bottom: 2vh; right: 2vw; color: #ffffff66; font-size: 1.5vh; font-family: ui-monospace, Menlo, monospace; z-index: 10; }
+  .paw { position: absolute; font-size: 26vh; opacity: .06; right: -3vw; bottom: -6vh; transform: rotate(-14deg); pointer-events: none; }
+  table { border-collapse: collapse; width: 100%; font-size: 2.2vh; background: var(--card); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 14px rgba(23,90,94,.08); }
+  th, td { padding: 1.6vh 1.4vw; text-align: left; border-bottom: 1px solid var(--line); }
+  th { background: var(--tealSoft); color: var(--ink); font-size: 2vh; }
+  @media print {
+    .slide { display: flex !important; page-break-after: always; height: 100vh; }
+    .kbd { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 1 封面 -->
+<section class="slide active">
+  <div class="paw">🐾</div>
+  <div class="eyebrow">2026 西红门镇产业创新黑客松 · 宠物经济赛道</div>
+  <h1>CatCare<br>新手养猫<span class="accent">不慌</span>手册</h1>
+  <p class="lead">从「该做什么」到「去哪家医院」——<br>一个 AI 管家，把新手养猫焦虑在镇内闭环解决。</p>
+  <div class="foot"><span>CatCare</span><span>垂直知识库 + 多轮对话</span></div>
+</section>
+
+<!-- 2 痛点 -->
+<section class="slide">
+  <div class="eyebrow">为什么做这件事</div>
+  <h2>新手猫主的三个深夜时刻</h2>
+  <div class="cards">
+    <div class="card"><div class="big">🤯</div><b>不知道该做什么</b><span>疫苗几针？几时驱虫？知识散落在碎片化搜索里，没有一份为自家猫定制的清单。</span></div>
+    <div class="card"><div class="big">😨</div><b>出事了不知道多严重</b><span>半夜两点猫吐了——该观察还是冲医院？搜出来的答案从「没事」到「马上送医」都有。</span></div>
+    <div class="card"><div class="big">🏥</div><b>该就医时不知道去哪</b><span>镇里哪家靠谱、哪家 24 小时、哪家离得近——急的时候根本来不及查。</span></div>
+  </div>
+  <div class="foot"><span>目标用户：养猫 &lt; 1 年的新手猫主 · 多为意外开始养猫（捡到 / 朋友送养）</span><span>02</span></div>
+</section>
+
+<!-- 3 解决方案 -->
+<section class="slide">
+  <div class="eyebrow">我们的答案</div>
+  <h2>线上判断，线下落地，<span class="accent">闭环在镇内完成</span></h2>
+  <div class="flow">
+    <div class="step"><div class="ic">📋</div><b>录入档案</b><span>1 分钟建档</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ic">📅</div><b>专属养护时间线</b><span>AI 按月龄品种定制</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ic">🩺</div><b>AI 问诊分诊</b><span>红 / 黄 / 绿三档</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ic">🏥</div><b>镇内医院直达</b><span>24h 急诊置顶</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ic">🔁</div><b>医嘱回流</b><span>自动变成待办</span></div>
+  </div>
+  <p class="lead" style="margin-top:4vh">不是记录工具（记住它），是养护服务（<b class="accent">养好它</b>）。</p>
+  <div class="foot"><span>CatCare · 解决方案</span><span>03</span></div>
+</section>
+
+<!-- 4 垂类声明 -->
+<section class="slide">
+  <div class="eyebrow">赛道命题：垂直知识库 + 多轮对话</div>
+  <h2>我们的回答是：<span class="accent">只做猫</span></h2>
+  <div class="grid2">
+    <div>
+      <p class="lead" style="max-width:100%">猫和犬的医疗体系差异巨大——疫苗程序、驱虫方案、急症谱系、禁忌药物都不同。<b>垂类做深，分诊才可信。</b></p>
+      <div style="margin-top:3vh">
+        <span class="pill">公猫尿闭 = 致命急症</span>
+        <span class="pill">幼猫呕吐 ≠ 成猫呕吐</span>
+        <span class="pill">对乙酰氨基酚对猫剧毒</span>
+      </div>
+    </div>
+    <div class="quote">团队内有真实猫主做知识校对：<br>「单次呕吐精神好，多半是毛球」「软便是新手最常遇到的问题」——这些经验都写进了分诊规则。</div>
+  </div>
+  <div class="foot"><span>CatCare · 垂类深度</span><span>04</span></div>
+</section>
+
+<!-- 5 产品演示 -->
+<section class="slide">
+  <div class="eyebrow">Demo</div>
+  <h2>三分钟，走一遍真实的一天</h2>
+  <table>
+    <tr><th style="width:18%">场景</th><th>产品动作</th><th style="width:30%">背后的智能</th></tr>
+    <tr><td><b>建档</b></td><td>2 月龄英短「豆豆」，四步录入</td><td>生活方式 / 多宠家庭都会改变方案</td></tr>
+    <tr><td><b>时间线</b></td><td>「第二针疫苗本周到期」置顶提醒</td><td>AI 按档案生成，可勾选、点开有操作指引</td></tr>
+    <tr><td><b>问诊</b></td><td>「它吐了」→ AI 追问 → <span class="red">🔴 立即就医</span></td><td>结合月龄从严判断，附观察要点</td></tr>
+    <tr><td><b>医院</b></td><td>高德地图 · 24h 急诊置顶 · 一键拨号</td><td>覆盖西红门镇 6 家宠物医院</td></tr>
+    <tr><td><b>回流</b></td><td>医嘱一句话 → 自动变成本周待办</td><td>检验单拍照存档，体重曲线可记录</td></tr>
+  </table>
+  <div class="foot"><span>CatCare · 产品演示（此页配录屏）</span><span>05</span></div>
+</section>
+
+<!-- 6 智能亮点 RAG -->
+<section class="slide">
+  <div class="eyebrow">技术亮点</div>
+  <h2>知识库 RAG：<span class="accent">只答校对过的，不编</span></h2>
+  <div class="flow">
+    <div class="step"><div class="ic">❓</div><b>用户提问</b><span>「猫能喝牛奶吗」</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ic">🔍</div><b>检索知识库</b><span>命中 Top-3 相关条目</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ic">🤖</div><b>依据条目生成</b><span>仅引用命中内容作答</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ic">📎</div><b>标注来源</b><span>每条回答可溯源</span></div>
+  </div>
+  <div style="margin-top:4vh">
+    <span class="pill">30 条猫科知识 · 参照《猫咪家庭医学大百科》与 AAFP 指南校对</span>
+    <span class="pill">未收录会如实说「不知道」</span>
+    <span class="pill">每日科普轮换</span>
+  </div>
+  <div class="foot"><span>CatCare · RAG 知识库</span><span>06</span></div>
+</section>
+
+<!-- 7 闭环叙事 -->
+<section class="slide">
+  <div class="eyebrow">最想讲的一件事</div>
+  <h2>医生说的话，<span class="accent">不会留在诊室里</span></h2>
+  <div class="quote" style="font-size:3.2vh">
+    「禁食 12 小时，益生菌每天两次连喂 5 天，3 天后复诊」<br><br>
+    → 保存后自动变成时间线上的 <b>3 条待办</b>，打上 🏥 医嘱标——<br>
+    <b class="accent">变成第二天早上的提醒。</b>
+  </div>
+  <p class="lead" style="margin-top:3vh">就诊回填 + 检验单存档 + 体重曲线，健康数据全部沉淀在档案里。</p>
+  <div class="foot"><span>CatCare · 数据闭环</span><span>07</span></div>
+</section>
+
+<!-- 8 本地化 -->
+<section class="slide">
+  <div class="eyebrow">为什么是西红门镇</div>
+  <h2>镇级民生基础设施，<span class="accent">不止是一个 App</span></h2>
+  <div class="cards">
+    <div class="card"><div class="num">6</div><b>镇内宠物医院全覆盖</b><span>地址电话逐一核实，高德地图直达</span></div>
+    <div class="card"><div class="num">24h</div><b>急诊绿色通道</b><span>红色分诊自动置顶 24 小时医院，一键拨号</span></div>
+    <div class="card"><div class="num">🎁</div><b>本地宠物文创</b><span>猫咪照片一键生成吧唧 / 冰箱贴，联动 1688 供应链与本地医院联名周边</span></div>
+  </div>
+  <div class="foot"><span>CatCare · 本地闭环 + 商业化想象</span><span>08</span></div>
+</section>
+
+<!-- 9 规划 -->
+<section class="slide">
+  <div class="eyebrow">下一步</div>
+  <h2>从 Demo 到产品</h2>
+  <ul class="tick">
+    <li><b>近期</b>：知识库扩充至 100+ 条并引入兽医审核；检索升级为向量召回</li>
+    <li><b>中期</b>:接入医院真实号源与预约；提醒推送；多宠物档案</li>
+    <li><b>远期</b>：以猫为样板复制到犬（独立知识体系）；镇级宠物健康数据面板</li>
+  </ul>
+  <p class="lead" style="margin-top:3vh">今天的每一条分诊规则、每一条科普，都已经过真实猫主校对——<br>这是我们和「随便问问大模型」最大的区别。</p>
+  <div class="foot"><span>CatCare · Roadmap</span><span>09</span></div>
+</section>
+
+<!-- 10 结尾 -->
+<section class="slide">
+  <div class="paw">🐱</div>
+  <div class="eyebrow">CatCare</div>
+  <h1>新手养猫，<span class="accent">从此不慌</span>。</h1>
+  <p class="lead">谢谢！欢迎扫码体验 / 现场提问。</p>
+  <div style="margin-top:4vh">
+    <span class="pill">📋 档案</span><span class="pill">📅 时间线</span><span class="pill">🩺 问诊</span><span class="pill">📚 科普</span><span class="pill">🏥 医院</span>
+  </div>
+  <div class="foot"><span>2026 西红门镇产业创新黑客松</span><span>10</span></div>
+</section>
+
+<div class="kbd">← → 翻页 · F 全屏</div>
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  let cur = 0;
+  function go(n) {
+    cur = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, i) => s.classList.toggle('active', i === cur));
+  }
+  addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(cur + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(cur - 1);
+    if (e.key.toLowerCase() === 'f') document.documentElement.requestFullscreen?.();
+  });
+  addEventListener('click', (e) => { if (e.clientX > innerWidth / 2) go(cur + 1); else go(cur - 1); });
+</script>
+</body>
+</html>
