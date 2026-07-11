@@ -93,6 +93,14 @@ async function askClaude(system, messages) {
   const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
   return JSON.parse(text.replace(/```json|```/g, "").trim());
 }
+const HOWTO_FALLBACK = {
+  "疫苗": ["提前电话预约，确认有苗", "接种前猫咪需健康、无感冒症状", "接种后留观30分钟，24小时内注意精神"],
+  "驱虫": ["按体重选剂量，分清体内/体外", "体外滴颈后48小时不洗澡", "驱虫后留意有无呕吐软便"],
+  "喂养": ["定时定量，少食多餐", "换粮用7天过渡法慢慢换", "随时保证干净饮水"],
+  "体检": ["提前预约并携带疫苗本", "记下近期体重和异常表现，方便医生判断"],
+  "医嘱": ["严格按医生说明执行", "症状反复或加重及时复诊"],
+  "其他": ["按建议时间完成", "完成后回来打个勾"]
+};
 const USER_POS = [116.3316, 39.7905];
 let amapPromise = null;
 function loadAMap() {
@@ -251,6 +259,9 @@ function PetGuardian() {
   const [timeline, setTimeline] = useState(null);
   const [tlLoading, setTlLoading] = useState(false);
   const [tlSource, setTlSource] = useState("");
+  const [doneKeys, setDoneKeys] = useState({});
+  const [openItem, setOpenItem] = useState("");
+  const [howto, setHowto] = useState({});
   const [chat, setChat] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatBusy, setChatBusy] = useState(false);
@@ -271,6 +282,9 @@ function PetGuardian() {
   async function generateTimeline() {
     setScreen("timeline");
     setTlLoading(true);
+    setDoneKeys({});
+    setOpenItem("");
+    setHowto({});
     const sys = `\u4F60\u662F\u732B\u79D1\u533B\u7597\u987E\u95EE\u3002\u6839\u636E\u732B\u54AA\u6863\u6848\u751F\u6210\u517B\u62A4\u65F6\u95F4\u7EBF\u3002\u89C4\u5219\uFF1A\u4E25\u683C\u6309\u54C1\u79CD/\u6708\u9F84/\u4F53\u91CD/\u751F\u6D3B\u65B9\u5F0F(indoor=\u5168\u5BA4\u5185,outdoor=\u4F1A\u51FA\u95E8,\u51FA\u95E8\u732B\u9700\u72C2\u72AC\u75AB\u82D7\u4E0E\u66F4\u9891\u7E41\u4F53\u5916\u9A71\u866B)/\u5DF2\u5B8C\u6210\u4E8B\u9879/\u5BB6\u5EAD\u6210\u5458(family)\u8BA1\u7B97\uFF1B\u957F\u6BDB\u54C1\u79CD(\u5E03\u5076/\u7F05\u56E0\u7B49)\u6216\u6362\u6BDB\u5B63\u9700\u52A0\u68B3\u6BDB\u8282\u70B9\uFF1Bfamily\u542B\u72D7\u5219\u4F53\u5916\u9A71\u866B\u66F4\u9AD8\u9891\u5E76\u6CE8\u660E\u539F\u56E0\uFF1B2-6\u6708\u9F84\u53EF\u542B\u4E00\u6761\u6E29\u548C\u7684\u8865\u5242\u5EFA\u8BAE(\u5982\u9499\u7C89/\u9C7C\u6CB9\uFF0C\u975E\u5FC5\u987B\u53E3\u543B)\uFF1B\u8F93\u51FAJSON\u6570\u7EC4\uFF0C\u6BCF\u9879\u542B {title, period(week|month|future), suggested_date, reason, category(\u75AB\u82D7|\u9A71\u866B|\u5582\u517B|\u4F53\u68C0|\u5176\u4ED6)}\uFF1Breason\u572820\u5B57\u5185\u3001\u53E3\u543B\u6E29\u548C\uFF1B6-8\u9879\uFF1B\u53EA\u8F93\u51FAJSON\u6570\u7EC4\uFF0C\u4E0D\u8F93\u51FA\u5176\u4ED6\u4EFB\u4F55\u6587\u5B57\u3002`;
     try {
       const items = await askClaude(sys, [
@@ -284,6 +298,18 @@ function PetGuardian() {
       setTlSource("cache");
     }
     setTlLoading(false);
+  }
+  async function fetchHowto(t) {
+    if (howto[t.title]) return;
+    setHowto((h) => ({ ...h, [t.title]: { loading: true } }));
+    const sys = `你是猫科医疗顾问。把养护事项拆成新手能照做的步骤。猫咪档案：${JSON.stringify(profile, (k, v) => k === "photo" ? void 0 : v)}。只输出JSON：{"steps":["步骤1","步骤2","步骤3"],"tip":"一句新手最容易踩坑的提醒"}。steps共2-4条、每条20字内、具体可执行、结合该猫月龄体重。`;
+    try {
+      const out = await askClaude(sys, [{ role: "user", content: `事项：${t.title}（${t.category}，${t.suggested_date}），原因：${t.reason}` }]);
+      if (!out || !Array.isArray(out.steps) || !out.steps.length) throw new Error("bad");
+      setHowto((h) => ({ ...h, [t.title]: { steps: out.steps.slice(0, 4), tip: out.tip || "" } }));
+    } catch {
+      setHowto((h) => ({ ...h, [t.title]: { steps: HOWTO_FALLBACK[t.category] || HOWTO_FALLBACK["其他"], tip: "" } }));
+    }
   }
   async function sendConsult(text) {
     if (!text.trim() || chatBusy) return;
@@ -533,22 +559,30 @@ function PetGuardian() {
     } }, profile.photo ? /* @__PURE__ */ React.createElement("img", { src: profile.photo, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }) : "\u{1F431}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 19 } }, petLabel), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, marginTop: 2 } }, profile.breed || "\u672A\u77E5\u54C1\u79CD", " \xB7 ", profile.ageMonths || "?", "\u6708\u9F84 \xB7 ", profile.weight || "?", "kg \xB7 ", profile.sex, profile.neutered ? ` \xB7 ${profile.neutered}` : "")), /* @__PURE__ */ React.createElement(Stamp, { text: "\u6863\u6848\u5DF2\u5EFA", color: C.teal, rotate: 10 }))), tlLoading ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.inkSoft } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, animation: "spin 1.6s linear infinite", display: "inline-block" } }, "\u2726"), /* @__PURE__ */ React.createElement("style", null, `@keyframes spin{to{transform:rotate(360deg)}}`), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, fontFamily: F.display, fontSize: 16 } }, "\u6B63\u5728\u4E3A", petLabel, "\u5B9A\u5236\u517B\u62A4\u8BA1\u5212\u2026"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, marginTop: 6, fontFamily: F.mono } }, "\u7ED3\u5408\u54C1\u79CD \xB7 \u6708\u9F84 \xB7 \u5DF2\u5B8C\u6210\u4E8B\u9879")) : /* @__PURE__ */ React.createElement(React.Fragment, null, groups.map(([key, label, color, soft]) => {
       const items = (timeline || []).filter((t) => t.period === key);
       if (!items.length) return null;
-      return /* @__PURE__ */ React.createElement("div", { key, style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: "50%", background: color, border: `1px solid ${C.line}` } }), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 16 } }, label), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, borderTop: `1.5px dashed ${C.line}` } })), /* @__PURE__ */ React.createElement("div", { style: { borderLeft: `1px solid ${C.line}`, marginLeft: 4, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 10 } }, items.map((t, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
-        background: soft,
-        border: `1px solid ${C.line}`,
-        borderRadius: 10,
-        padding: "12px 14px",
-        position: "relative"
-      } }, /* @__PURE__ */ React.createElement("span", { style: {
-        position: "absolute",
-        left: -24,
-        top: 16,
-        width: 12,
-        height: 12,
-        borderRadius: "50%",
-        background: C.paper,
-        border: `2.5px solid ${C.teal}`
-      } }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } }, /* @__PURE__ */ React.createElement("b", { style: { fontSize: 15 } }, t.category === "\u533B\u5631" ? "\u{1F3E5} " : "", t.title), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, whiteSpace: "nowrap" } }, t.suggested_date)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, t.reason), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, marginTop: 8, fontFamily: F.mono, color: C.teal } }, "\u{1F514} \u5230\u671F\u63D0\u9192 \xB7 \u5DF2\u5F00\u542F\uFF08demo\uFF09")))));
+      const gDone = items.filter((t) => doneKeys[t.title]).length;
+      return /* @__PURE__ */ React.createElement("div", { key, style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: "50%", background: color, border: `1px solid ${C.line}` } }), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 16 } }, label), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.mono, fontSize: 11, color: gDone === items.length ? C.teal : C.inkSoft, fontWeight: 700 } }, gDone, "/", items.length, gDone === items.length ? " ✓" : ""), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, borderTop: `1.5px dashed ${C.line}` } })), /* @__PURE__ */ React.createElement("div", { style: { borderLeft: `1px solid ${C.line}`, marginLeft: 4, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 10 } }, items.map((t, i) => {
+        const done = !!doneKeys[t.title];
+        const open = openItem === t.title;
+        const guide = howto[t.title];
+        return /* @__PURE__ */ React.createElement("div", { key: i, style: {
+          background: done ? C.paperLight : soft,
+          border: `1px solid ${C.line}`,
+          borderRadius: 10,
+          padding: "12px 14px",
+          position: "relative",
+          opacity: done ? 0.62 : 1,
+          transition: "opacity .15s"
+        } }, /* @__PURE__ */ React.createElement("span", { style: {
+          position: "absolute",
+          left: -24,
+          top: 16,
+          width: 12,
+          height: 12,
+          borderRadius: "50%",
+          background: done ? C.teal : C.paper,
+          border: `2.5px solid ${C.teal}`
+        } }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("button", { "aria-label": done ? "取消完成" : "标记完成", onClick: () => setDoneKeys((d) => ({ ...d, [t.title]: !d[t.title] })), style: { width: 24, height: 24, borderRadius: 999, flexShrink: 0, cursor: "pointer", marginTop: 1, border: `1.5px solid ${done ? C.teal : C.inkSoft}`, background: done ? C.teal : "transparent", color: "#fff", fontSize: 13, lineHeight: 1, padding: 0 } }, done ? "✓" : ""), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, cursor: "pointer" }, onClick: () => { const nx = open ? "" : t.title; setOpenItem(nx); if (nx) fetchHowto(t); } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } }, /* @__PURE__ */ React.createElement("b", { style: { fontSize: 15, textDecoration: done ? "line-through" : "none" } }, t.category === "\u533B\u5631" ? "\u{1F3E5} " : "", t.title), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, whiteSpace: "nowrap" } }, t.suggested_date)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, t.reason), open && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, borderTop: `1px dashed ${C.line}`, paddingTop: 8 } }, !guide || guide.loading ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.inkSoft } }, "正在为", petLabel, "生成操作指引\u2026") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("ol", { style: { margin: 0, paddingLeft: 18, fontSize: 12.5, lineHeight: 1.9 } }, guide.steps.map((st, x) => /* @__PURE__ */ React.createElement("li", { key: x }, st))), guide.tip && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: C.verm, marginTop: 6 } }, "\u26A0 ", guide.tip))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, marginTop: 8, fontFamily: F.mono, color: done ? C.teal : C.inkSoft } }, done ? "\u2713 \u5DF2\u5B8C\u6210 \xB7 \u5E72\u5F97\u6F02\u4EAE" : open ? "\u518D\u70B9\u4E00\u4E0B\u6536\u8D77" : "\u70B9\u6211\u770B\u600E\u4E48\u505A \xB7 \u{1F514} \u63D0\u9192\u5DF2\u5F00\u542F"))));
+      })));
     }), tlSource === "cache" && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, textAlign: "center", marginBottom: 10 } }, "\u26A1 \u5F53\u524D\u4E3A\u9884\u7F6E\u6F14\u793A\u6570\u636E\uFF08\u63A5\u53E3\u672A\u8FDE\u901A\uFF09"), /* @__PURE__ */ React.createElement(Btn, { variant: "ink", onClick: () => {
       setChat([]);
       setTriage(null);
@@ -663,7 +697,7 @@ function PetGuardian() {
       cursor: "pointer",
       fontFamily: F.body
     } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22 } }, icon), /* @__PURE__ */ React.createElement("span", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontWeight: 700, fontSize: 15, color: C.ink } }, label), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: 12, color: C.inkSoft, marginTop: 2 } }, sub)), /* @__PURE__ */ React.createElement("span", { style: { color: C.inkSoft } }, "\u2192"));
-    const weekCount = (timeline || []).filter((t) => t.period === "week").length;
+    const weekCount = (timeline || []).filter((t) => t.period === "week" && !doneKeys[t.title]).length;
     return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u6211\u7684"), /* @__PURE__ */ React.createElement(Eyebrow, null, "PET RESIDENT \xB7 XHM")), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14, transform: "rotate(-0.6deg)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: {
       width: 62,
       height: 62,
