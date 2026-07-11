@@ -17,7 +17,12 @@ open "index.html?key=你的key&base=https://中转地址"
 
 # 可选换模型：
 &model=claude-sonnet-4-6
+
+# 高德地图（不配则医院页显示内置示意图，不影响演示）：
+&amap=高德JSKey&amapsec=高德安全密钥
 ```
+
+高德 key 申请：console.amap.com → 应用管理 → 创建应用 → 添加 Key，服务平台选 **Web端(JS API)**。2021 年后申请的 key 会同时给一个"安全密钥"，两个都要填。本地 file:// 打开时高德域名白名单不生效，建议部署到 Vercel 后再验证真地图。
 
 接口不通时自动使用预置演示数据，时间线页会显示"⚡ 当前为预置演示数据"角标。
 

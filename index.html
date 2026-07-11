@@ -39,12 +39,12 @@ const F = {
   mono: "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"
 };
 const HOSPITALS = [
-  { name: "\u5168\u5FC3\u5168\u610F\u8FDE\u9501\u52A8\u7269\u533B\u9662\xB7\u897F\u7EA2\u95E8\u5E97", address: "\u5B8F\u4E1A\u8DEF\u7406\u60F3\u5BB6\u56ED\u5317\u95E8\u5E95\u5546", phone: "010-60290000", is24h: true, dist: "1.2km" },
-  { name: "\u5168\u5FC3\u5168\u610F\u52A8\u7269\u533B\u9662\u603B\u9662", address: "\u6B23\u5B81\u885772\u53F7", phone: "010-60250000", is24h: false, dist: "1.8km" },
-  { name: "\u5BA0\u9890\u751F\u7231\u798F\u52A8\u7269\u533B\u9662", address: "\u5B8F\u4E1A\u8DEF\u745E\u6D77\u5BB6\u56ED\u4E09\u533A\u5317\u95E8\u5E95\u5546", phone: "010-60253607", is24h: false, dist: "2.1km" },
-  { name: "\u5EB7\u5C14\u8D1D\u52A8\u7269\u533B\u9662", address: "\u6B23\u8363\u5317\u5927\u885718-12\u53F7", phone: "010-60260000", is24h: false, dist: "2.4km" },
-  { name: "\u897F\u7EA2\u95E8\u767E\u7075\u52A8\u7269\u533B\u9662", address: "\u5B8F\u65ED\u8DEF248\u53F7", phone: "010-60291606", is24h: false, dist: "2.9km" },
-  { name: "\u897F\u7EA2\u95E8\u65B0\u661F\u52A8\u7269\u533B\u9662", address: "\u897F\u7EA2\u95E8\u9547\u4E94\u6751", phone: "010-60255630", is24h: false, dist: "3.3km" }
+  { name: "\u5168\u5FC3\u5168\u610F\u8FDE\u9501\u52A8\u7269\u533B\u9662\xB7\u897F\u7EA2\u95E8\u5E97", address: "\u5B8F\u4E1A\u8DEF\u7406\u60F3\u5BB6\u56ED\u5317\u95E8\u5E95\u5546", phone: "010-60290000", is24h: true, dist: "1.2km", lng: 116.3283, lat: 39.7952 },
+  { name: "\u5168\u5FC3\u5168\u610F\u52A8\u7269\u533B\u9662\u603B\u9662", address: "\u6B23\u5B81\u885772\u53F7", phone: "010-60250000", is24h: false, dist: "1.8km", lng: 116.3391, lat: 39.7889 },
+  { name: "\u5BA0\u9890\u751F\u7231\u798F\u52A8\u7269\u533B\u9662", address: "\u5B8F\u4E1A\u8DEF\u745E\u6D77\u5BB6\u56ED\u4E09\u533A\u5317\u95E8\u5E95\u5546", phone: "010-60253607", is24h: false, dist: "2.1km", lng: 116.3249, lat: 39.7921 },
+  { name: "\u5EB7\u5C14\u8D1D\u52A8\u7269\u533B\u9662", address: "\u6B23\u8363\u5317\u5927\u885718-12\u53F7", phone: "010-60260000", is24h: false, dist: "2.4km", lng: 116.3437, lat: 39.7856 },
+  { name: "\u897F\u7EA2\u95E8\u767E\u7075\u52A8\u7269\u533B\u9662", address: "\u5B8F\u65ED\u8DEF248\u53F7", phone: "010-60291606", is24h: false, dist: "2.9km", lng: 116.3312, lat: 39.7801 },
+  { name: "\u897F\u7EA2\u95E8\u65B0\u661F\u52A8\u7269\u533B\u9662", address: "\u897F\u7EA2\u95E8\u9547\u4E94\u6751", phone: "010-60255630", is24h: false, dist: "3.3km", lng: 116.3195, lat: 39.7838 }
 ];
 const TIMELINE_FALLBACK = [
   { title: "\u7B2C\u4E8C\u9488\u732B\u4E09\u8054\u75AB\u82D7", period: "week", suggested_date: "\u672C\u5468\u5185", reason: "\u9996\u9488\u540E21\u5929\u9700\u63A5\u79CD\u52A0\u5F3A\u9488", category: "\u75AB\u82D7" },
@@ -60,7 +60,9 @@ const TIMELINE_FALLBACK = [
   if (qs.get("key")) localStorage.setItem("cc_api_key", qs.get("key"));
   if (qs.get("base")) localStorage.setItem("cc_api_base", qs.get("base"));
   if (qs.get("model")) localStorage.setItem("cc_model", qs.get("model"));
-  if (qs.get("key") || qs.get("base") || qs.get("model")) {
+  if (qs.get("amap")) localStorage.setItem("cc_amap_key", qs.get("amap"));
+  if (qs.get("amapsec")) localStorage.setItem("cc_amap_sec", qs.get("amapsec"));
+  if (qs.get("key") || qs.get("base") || qs.get("model") || qs.get("amap") || qs.get("amapsec")) {
     history.replaceState(null, "", location.pathname);
   }
 })();
@@ -90,6 +92,47 @@ async function askClaude(system, messages) {
   const data = await res.json();
   const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
   return JSON.parse(text.replace(/```json|```/g, "").trim());
+}
+const USER_POS = [116.3316, 39.7905];
+let amapPromise = null;
+function loadAMap() {
+  const key = localStorage.getItem("cc_amap_key") || "";
+  if (!key) return Promise.reject(new Error("no amap key"));
+  if (window.AMap) return Promise.resolve(window.AMap);
+  if (!amapPromise) {
+    const sec = localStorage.getItem("cc_amap_sec") || "";
+    if (sec) window._AMapSecurityConfig = { securityJsCode: sec };
+    amapPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("amap timeout")), 8000);
+      const sc = document.createElement("script");
+      sc.src = "https://webapi.amap.com/maps?v=2.0&key=" + encodeURIComponent(key);
+      sc.onload = () => { clearTimeout(timer); window.AMap ? resolve(window.AMap) : reject(new Error("amap bad load")); };
+      sc.onerror = () => { clearTimeout(timer); reject(new Error("amap load fail")); };
+      document.head.appendChild(sc);
+    });
+  }
+  return amapPromise;
+}
+function AMapView({ hospitals, fallback }) {
+  const boxRef = useRef(null);
+  const [state, setState] = useState("loading");
+  useEffect(() => {
+    let dead = false, map = null;
+    loadAMap().then((AMap) => {
+      if (dead || !boxRef.current) return;
+      map = new AMap.Map(boxRef.current, { center: USER_POS, zoom: 14, resizeEnable: true });
+      new AMap.CircleMarker({ center: USER_POS, radius: 8, fillColor: "#12A5B8", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, zIndex: 20, map });
+      hospitals.forEach((h) => {
+        if (!h.lng) return;
+        const m = new AMap.Marker({ position: [h.lng, h.lat], title: h.name, map });
+        m.setLabel({ direction: "top", offset: new AMap.Pixel(0, -4), content: `<div style="font-size:11px;padding:2px 6px;border-radius:6px;border:1px solid #E3EAF1;background:${h.is24h ? "#E5504F" : "#fff"};color:${h.is24h ? "#fff" : "#16324A"};white-space:nowrap">${h.is24h ? "24h \u6025\u8BCA" : h.name.slice(0, 6)}</div>` });
+      });
+      setState("ok");
+    }).catch(() => { if (!dead) setState("fail"); });
+    return () => { dead = true; if (map) map.destroy(); };
+  }, []);
+  if (state === "fail") return fallback;
+  return /* @__PURE__ */ React.createElement("div", { style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { ref: boxRef, style: { width: "100%", height: 190 } }), state === "loading" && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.inkSoft, background: C.paper } }, "\u5730\u56FE\u52A0\u8F7D\u4E2D\u2026"));
 }
 function Stamp({ text, color = C.teal, rotate = -8 }) {
   return /* @__PURE__ */ React.createElement("span", { style: {
@@ -563,7 +606,7 @@ function PetGuardian() {
   }
   if (screen === "hospitals") {
     const sorted = [...HOSPITALS].sort((a, b) => (b.is24h ? 1 : 0) - (a.is24h ? 1 : 0));
-    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u897F\u7EA2\u95E8\u9547 \xB7 \u5BA0\u7269\u533B\u9662"), triage && /* @__PURE__ */ React.createElement(Stamp, { text: triage.level === "red" ? "\u6025\u8BCA\u4F18\u5148" : "\u5C3D\u5FEB\u5C31\u533B", rotate: 8 })), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 0, overflow: "hidden", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 380 190", style: { display: "block", width: "100%", background: "#EFE7D2" }, role: "img", "aria-label": "\u897F\u7EA2\u95E8\u9547\u533B\u9662\u5206\u5E03\u793A\u610F\u56FE" }, /* @__PURE__ */ React.createElement("path", { d: "M0,95 C90,70 160,120 380,85", stroke: C.line, strokeWidth: "14", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M120,0 C130,80 110,130 140,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M250,0 C240,70 270,120 255,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "26", fontSize: "13", fill: C.inkSoft, fontFamily: F.display }, "\u897F\u7EA2\u95E8\u9547\uFF08\u793A\u610F\uFF09"), /* @__PURE__ */ React.createElement("circle", { cx: "190", cy: "100", r: "7", fill: C.teal, stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: "202", y: "104", fontSize: "11", fill: C.ink }, "\u4F60\u5728\u8FD9"), [[95, 60, true], [280, 55, false], [70, 140, false], [305, 130, false], [180, 160, false], [235, 92, false]].map(([x, y, is24], i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: x, cy: y, r: is24 ? 9 : 6.5, fill: is24 ? C.verm : C.paperLight, stroke: "#fff", strokeWidth: "2" }), is24 && /* @__PURE__ */ React.createElement("text", { x: x + 13, y: y + 4, fontSize: "11", fontWeight: "700", fill: C.verm }, "24h"))))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u6309 24\u5C0F\u65F6\u4F18\u5148 + \u8DDD\u79BB \u6392\u5E8F \uFF5C \u6B63\u5F0F\u7248\u63A5\u5165\u9AD8\u5FB7\u5730\u56FE"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, sorted.map((h, i) => /* @__PURE__ */ React.createElement(PerforatedCard, { key: i, style: {
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u897F\u7EA2\u95E8\u9547 \xB7 \u5BA0\u7269\u533B\u9662"), triage && /* @__PURE__ */ React.createElement(Stamp, { text: triage.level === "red" ? "\u6025\u8BCA\u4F18\u5148" : "\u5C3D\u5FEB\u5C31\u533B", rotate: 8 })), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 0, overflow: "hidden", marginBottom: 8 } }, /* @__PURE__ */ React.createElement(AMapView, { hospitals: sorted, fallback: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 380 190", style: { display: "block", width: "100%", background: "#E8F0F6" }, role: "img", "aria-label": "\u897F\u7EA2\u95E8\u9547\u533B\u9662\u5206\u5E03\u793A\u610F\u56FE" }, /* @__PURE__ */ React.createElement("path", { d: "M0,95 C90,70 160,120 380,85", stroke: C.line, strokeWidth: "14", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M120,0 C130,80 110,130 140,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M250,0 C240,70 270,120 255,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "26", fontSize: "13", fill: C.inkSoft, fontFamily: F.display }, "\u897F\u7EA2\u95E8\u9547\uFF08\u793A\u610F\uFF09"), /* @__PURE__ */ React.createElement("circle", { cx: "190", cy: "100", r: "7", fill: C.teal, stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: "202", y: "104", fontSize: "11", fill: C.ink }, "\u4F60\u5728\u8FD9"), [[95, 60, true], [280, 55, false], [70, 140, false], [305, 130, false], [180, 160, false], [235, 92, false]].map(([x, y, is24], i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: x, cy: y, r: is24 ? 9 : 6.5, fill: is24 ? C.verm : C.paperLight, stroke: "#fff", strokeWidth: "2" }), is24 && /* @__PURE__ */ React.createElement("text", { x: x + 13, y: y + 4, fontSize: "11", fontWeight: "700", fill: C.verm }, "24h"))))})), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u6309 24\u5C0F\u65F6\u4F18\u5148 + \u8DDD\u79BB \u6392\u5E8F \uFF5C \u672A\u914D\u7F6E\u9AD8\u5FB7key\u65F6\u663E\u793A\u793A\u610F\u56FE"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, sorted.map((h, i) => /* @__PURE__ */ React.createElement(PerforatedCard, { key: i, style: {
       padding: 14,
       borderColor: h.is24h ? C.verm : C.ink,
       borderWidth: h.is24h ? 2 : 1.5,
