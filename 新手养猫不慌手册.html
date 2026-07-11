@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>新手养猫不慌手册 · 西红门镇</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #F7F1E3; }
+  #root { min-height: 100vh; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible {
+    outline: 2px solid #14695B; outline-offset: 2px;
+  }
+  input, textarea, button { font: inherit; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const { useState, useRef, useEffect } = React;
+const C = {
+  paper: "#F7F1E3",
+  paperLight: "#FFFBF0",
+  ink: "#2B2A24",
+  inkSoft: "#6B675C",
+  teal: "#14695B",
+  tealSoft: "#DCEAE4",
+  verm: "#DC4B27",
+  vermSoft: "#F9E2D8",
+  yellow: "#E9AE2B",
+  yellowSoft: "#FBF0D4",
+  line: "#D8CFB9"
+};
+const F = {
+  display: '"Songti SC","Noto Serif SC","STSong","SimSun",serif',
+  body: '"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif',
+  mono: "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"
+};
+const HOSPITALS = [
+  { name: "\u5168\u5FC3\u5168\u610F\u8FDE\u9501\u52A8\u7269\u533B\u9662\xB7\u897F\u7EA2\u95E8\u5E97", address: "\u5B8F\u4E1A\u8DEF\u7406\u60F3\u5BB6\u56ED\u5317\u95E8\u5E95\u5546", phone: "010-60290000", is24h: true, dist: "1.2km" },
+  { name: "\u5168\u5FC3\u5168\u610F\u52A8\u7269\u533B\u9662\u603B\u9662", address: "\u6B23\u5B81\u885772\u53F7", phone: "010-60250000", is24h: false, dist: "1.8km" },
+  { name: "\u5BA0\u9890\u751F\u7231\u798F\u52A8\u7269\u533B\u9662", address: "\u5B8F\u4E1A\u8DEF\u745E\u6D77\u5BB6\u56ED\u4E09\u533A\u5317\u95E8\u5E95\u5546", phone: "010-60253607", is24h: false, dist: "2.1km" },
+  { name: "\u5EB7\u5C14\u8D1D\u52A8\u7269\u533B\u9662", address: "\u6B23\u8363\u5317\u5927\u885718-12\u53F7", phone: "010-60260000", is24h: false, dist: "2.4km" },
+  { name: "\u897F\u7EA2\u95E8\u767E\u7075\u52A8\u7269\u533B\u9662", address: "\u5B8F\u65ED\u8DEF248\u53F7", phone: "010-60291606", is24h: false, dist: "2.9km" },
+  { name: "\u897F\u7EA2\u95E8\u65B0\u661F\u52A8\u7269\u533B\u9662", address: "\u897F\u7EA2\u95E8\u9547\u4E94\u6751", phone: "010-60255630", is24h: false, dist: "3.3km" }
+];
+const TIMELINE_FALLBACK = [
+  { title: "\u7B2C\u4E8C\u9488\u732B\u4E09\u8054\u75AB\u82D7", period: "week", suggested_date: "\u672C\u5468\u5185", reason: "\u9996\u9488\u540E21\u5929\u9700\u63A5\u79CD\u52A0\u5F3A\u9488", category: "\u75AB\u82D7" },
+  { title: "\u4F53\u5185\u9A71\u866B\uFF08\u9996\u6B21\uFF09", period: "week", suggested_date: "\u672C\u5468\u5185", reason: "2\u6708\u9F84\u53EF\u5F00\u59CB\u9996\u6B21\u4F53\u5185\u9A71\u866B", category: "\u9A71\u866B" },
+  { title: "\u4F53\u5916\u9A71\u866B", period: "month", suggested_date: "\u672C\u6708\u5185", reason: "\u590F\u5B63\u8DF3\u86A4\u6D3B\u8DC3\uFF0C\u9700\u6309\u6708\u9884\u9632", category: "\u9A71\u866B" },
+  { title: "\u5E7C\u732B\u7CAE\u5B9A\u65F6\u5B9A\u91CF\u5582\u517B", period: "month", suggested_date: "\u6301\u7EED\u8FDB\u884C", reason: "\u5C11\u98DF\u591A\u9910\uFF0C\u6BCF\u65E54\u6B21", category: "\u5582\u517B" },
+  { title: "\u7B2C\u4E09\u9488\u75AB\u82D7\uFF0B\u72C2\u72AC\u75AB\u82D7", period: "future", suggested_date: "\u7EA64\u5468\u540E", reason: "\u5B8C\u6210\u57FA\u7840\u514D\u75AB\u7A0B\u5E8F", category: "\u75AB\u82D7" },
+  { title: "\u7EDD\u80B2\u8BC4\u4F30", period: "future", suggested_date: "6\u6708\u9F84", reason: "\u89C6\u53D1\u80B2\u60C5\u51B5\u4E0E\u533B\u751F\u5546\u8BAE", category: "\u4F53\u68C0" }
+];
+// API配置：打开页面时带 ?key=sk-xxx&base=https://中转地址 即可保存到localStorage，之后不用再带
+(function initApiConfig() {
+  const qs = new URLSearchParams(location.search);
+  if (qs.get("key")) localStorage.setItem("cc_api_key", qs.get("key"));
+  if (qs.get("base")) localStorage.setItem("cc_api_base", qs.get("base"));
+  if (qs.get("model")) localStorage.setItem("cc_model", qs.get("model"));
+  if (qs.get("key") || qs.get("base") || qs.get("model")) {
+    history.replaceState(null, "", location.pathname);
+  }
+})();
+async function askClaude(system, messages) {
+  const base = (localStorage.getItem("cc_api_base") || "https://api.anthropic.com").replace(/\/+$/, "");
+  const key = localStorage.getItem("cc_api_key") || "";
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
+  const res = await fetch(base + "/v1/messages", {
+    method: "POST",
+    signal: ctrl.signal,
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: localStorage.getItem("cc_model") || "claude-sonnet-4-6",
+      max_tokens: 1e3,
+      system,
+      messages
+    })
+  });
+  clearTimeout(timer);
+  if (!res.ok) throw new Error("api " + res.status);
+  const data = await res.json();
+  const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+  return JSON.parse(text.replace(/```json|```/g, "").trim());
+}
+function Stamp({ text, color = C.verm, rotate = -8 }) {
+  return /* @__PURE__ */ React.createElement("span", { style: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: `2px solid ${color}`,
+    color,
+    borderRadius: "50%",
+    width: 52,
+    height: 52,
+    fontSize: 11,
+    fontWeight: 700,
+    lineHeight: 1.15,
+    transform: `rotate(${rotate}deg)`,
+    textAlign: "center",
+    opacity: 0.85,
+    fontFamily: F.display,
+    flexShrink: 0,
+    padding: 4
+  } }, text);
+}
+function Eyebrow({ children }) {
+  return /* @__PURE__ */ React.createElement("div", { style: { color: C.teal, fontFamily: F.mono, fontSize: 11, letterSpacing: 2 } }, children);
+}
+function PerforatedCard({ children, style }) {
+  return /* @__PURE__ */ React.createElement("div", { style: {
+    background: C.paperLight,
+    border: `1.5px solid ${C.ink}`,
+    borderRadius: 10,
+    boxShadow: `3px 3px 0 ${C.line}`,
+    ...style
+  } }, children);
+}
+function Btn({ children, onClick, variant = "primary", disabled, style }) {
+  const base = {
+    fontFamily: F.body,
+    fontWeight: 600,
+    fontSize: 15,
+    borderRadius: 10,
+    padding: "13px 18px",
+    cursor: disabled ? "not-allowed" : "pointer",
+    border: `1.5px solid ${C.ink}`,
+    width: "100%",
+    transition: "transform .08s ease",
+    opacity: disabled ? 0.45 : 1
+  };
+  const variants = {
+    primary: { background: C.verm, color: "#fff", boxShadow: `3px 3px 0 ${C.ink}` },
+    ink: { background: C.ink, color: C.paper, boxShadow: `3px 3px 0 ${C.line}` },
+    ghost: { background: "transparent", color: C.ink, boxShadow: "none", borderStyle: "dashed" }
+  };
+  return /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      disabled,
+      onClick,
+      onMouseDown: (e) => !disabled && (e.currentTarget.style.transform = "translate(2px,2px)"),
+      onMouseUp: (e) => e.currentTarget.style.transform = "translate(0,0)",
+      style: { ...base, ...variants[variant], ...style }
+    },
+    children
+  );
+}
+function TabBar({ active, go }) {
+  const tabs = [
+    ["timeline", "\u{1F4D6}", "\u624B\u518C"],
+    ["consult", "\u{1FA7A}", "\u95EE\u8BCA"],
+    ["hospitals", "\u{1F4CD}", "\u533B\u9662"],
+    ["mine", "\u{1F43E}", "\u6211\u7684"]
+  ];
+  return /* @__PURE__ */ React.createElement("nav", { style: {
+    position: "fixed",
+    bottom: 0,
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "100%",
+    maxWidth: 420,
+    background: C.paperLight,
+    borderTop: `2px solid ${C.ink}`,
+    display: "flex",
+    zIndex: 50
+  } }, tabs.map(([key, icon, label]) => /* @__PURE__ */ React.createElement("button", { key, onClick: () => go(key), "aria-label": label, style: {
+    flex: 1,
+    padding: "9px 0 10px",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    fontFamily: F.body,
+    color: active === key ? C.verm : C.inkSoft,
+    fontWeight: active === key ? 800 : 500
+  } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20, filter: active === key ? "none" : "grayscale(1) opacity(.6)" } }, icon), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, marginTop: 2 } }, label), /* @__PURE__ */ React.createElement("div", { style: {
+    width: 18,
+    height: 3,
+    borderRadius: 2,
+    margin: "4px auto 0",
+    background: active === key ? C.verm : "transparent"
+  } }))));
+}
+function PetGuardian() {
+  const [screen, setScreen] = useState("home");
+  const [step, setStep] = useState(0);
+  const [profile, setProfile] = useState({
+    type: "cat",
+    lifestyle: "",
+    breed: "",
+    name: "",
+    ageMonths: "",
+    weight: "",
+    sex: "",
+    neutered: "",
+    done: [],
+    family: [],
+    photo: null
+  });
+  const [timeline, setTimeline] = useState(null);
+  const [tlLoading, setTlLoading] = useState(false);
+  const [tlSource, setTlSource] = useState("");
+  const [chat, setChat] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [triage, setTriage] = useState(null);
+  const [consultLog, setConsultLog] = useState([]);
+  const [visits, setVisits] = useState([]);
+  const [visitHospital, setVisitHospital] = useState(null);
+  const [visitForm, setVisitForm] = useState({ date: "", diagnosis: "", advice: "" });
+  const [visitSaving, setVisitSaving] = useState(false);
+  const chatEndRef = useRef(null);
+  const fileRef = useRef(null);
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chat, triage]);
+  const petLabel = profile.name || "TA";
+  async function generateTimeline() {
+    setScreen("timeline");
+    setTlLoading(true);
+    const sys = `\u4F60\u662F\u732B\u79D1\u533B\u7597\u987E\u95EE\u3002\u6839\u636E\u732B\u54AA\u6863\u6848\u751F\u6210\u517B\u62A4\u65F6\u95F4\u7EBF\u3002\u89C4\u5219\uFF1A\u4E25\u683C\u6309\u54C1\u79CD/\u6708\u9F84/\u4F53\u91CD/\u751F\u6D3B\u65B9\u5F0F(indoor=\u5168\u5BA4\u5185,outdoor=\u4F1A\u51FA\u95E8,\u51FA\u95E8\u732B\u9700\u72C2\u72AC\u75AB\u82D7\u4E0E\u66F4\u9891\u7E41\u4F53\u5916\u9A71\u866B)/\u5DF2\u5B8C\u6210\u4E8B\u9879/\u5BB6\u5EAD\u6210\u5458(family)\u8BA1\u7B97\uFF1B\u957F\u6BDB\u54C1\u79CD(\u5E03\u5076/\u7F05\u56E0\u7B49)\u6216\u6362\u6BDB\u5B63\u9700\u52A0\u68B3\u6BDB\u8282\u70B9\uFF1Bfamily\u542B\u72D7\u5219\u4F53\u5916\u9A71\u866B\u66F4\u9AD8\u9891\u5E76\u6CE8\u660E\u539F\u56E0\uFF1B2-6\u6708\u9F84\u53EF\u542B\u4E00\u6761\u6E29\u548C\u7684\u8865\u5242\u5EFA\u8BAE(\u5982\u9499\u7C89/\u9C7C\u6CB9\uFF0C\u975E\u5FC5\u987B\u53E3\u543B)\uFF1B\u8F93\u51FAJSON\u6570\u7EC4\uFF0C\u6BCF\u9879\u542B {title, period(week|month|future), suggested_date, reason, category(\u75AB\u82D7|\u9A71\u866B|\u5582\u517B|\u4F53\u68C0|\u5176\u4ED6)}\uFF1Breason\u572820\u5B57\u5185\u3001\u53E3\u543B\u6E29\u548C\uFF1B6-8\u9879\uFF1B\u53EA\u8F93\u51FAJSON\u6570\u7EC4\uFF0C\u4E0D\u8F93\u51FA\u5176\u4ED6\u4EFB\u4F55\u6587\u5B57\u3002`;
+    try {
+      const items = await askClaude(sys, [
+        { role: "user", content: `\u5BA0\u7269\u6863\u6848\uFF1A${JSON.stringify(profile, (k, v) => k === "photo" ? void 0 : v)}` }
+      ]);
+      if (!Array.isArray(items) || !items.length) throw new Error("bad");
+      setTimeline(items);
+      setTlSource("live");
+    } catch {
+      setTimeline(TIMELINE_FALLBACK);
+      setTlSource("cache");
+    }
+    setTlLoading(false);
+  }
+  async function sendConsult(text) {
+    if (!text.trim() || chatBusy) return;
+    const next = [...chat, { role: "user", content: text.trim() }];
+    setChat(next);
+    setChatInput("");
+    setChatBusy(true);
+    const sys = `\u4F60\u662F\u732B\u79D1\u5206\u8BCA\u52A9\u624B\u3002\u732B\u54AA\u6863\u6848\uFF1A${JSON.stringify(profile, (k, v) => k === "photo" ? void 0 : v)}\u3002\u7ED3\u5408\u6708\u9F84\u4E0E\u732B\u79D1\u7279\u6709\u98CE\u9669\u5224\u65AD\u5371\u9669\u5EA6\uFF08\u5E7C\u732B\u66F4\u8106\u5F31\uFF1B\u516C\u732B\u6392\u5C3F\u56F0\u96BE/\u5C3F\u4E0D\u51FA\u6765\u4E00\u5F8B\u6309\u6025\u75C7red\u5904\u7406\uFF1B\u5355\u6B21\u5455\u5410\u4E14\u7CBE\u795E\u98DF\u6B32\u6B63\u5E38\u591A\u4E3A\u6BDB\u7403\u6216\u8FDB\u98DF\u8FC7\u5FEB\uFF0C\u901A\u5E38green\u89C2\u5BDF\uFF1B\u8F6F\u4FBF\u5E38\u89C1\uFF0C\u7CBE\u795E\u98DF\u6B32\u6B63\u5E38\u7ED9green\uFF0C\u6301\u7EED3\u5929\u4EE5\u4E0A/\u5E26\u8840/\u4F34\u5455\u5410\u624D\u5347\u7EA7\uFF1B\u5455\u54102\u6B21\u4EE5\u4E0A\u6216\u4F34\u7CBE\u795E\u5DEE\u6309\u6708\u9F84\u4ECE\u4E25\uFF09\u3002green\u7684advice\u9700\u542B\u5177\u4F53\u89C2\u5BDF\u8981\u70B9\uFF08\u5982\uFF1A\u80E1\u987B\u6301\u7EED\u524D\u538B\u53EF\u80FD\u5728\u5FCD\u75DB\u3001\u98DF\u6B32\u6392\u6CC4\u662F\u5426\u6B63\u5E38\u3001\u7CBE\u795E\u6D3B\u8DC3\u5EA6\uFF09\u3002\u82E5\u4FE1\u606F\u4E0D\u8DB3\u5219\u8FFD\u95EE\uFF08\u6700\u591A\u8FFD\u95EE2\u8F6E\uFF09\uFF1B\u4FE1\u606F\u8DB3\u591F\u5219\u7ED9\u5206\u8BCA\u3002\u53EA\u8F93\u51FAJSON\uFF1A\u8FFD\u95EE\u65F6 {"type":"question","text":"..."}\uFF1B\u5206\u8BCA\u65F6 {"type":"triage","level":"red|yellow|green","summary":"\u4E00\u53E5\u8BDD\u7ED3\u8BBA","advice":["\u5EFA\u8BAE1","\u5EFA\u8BAE2","\u5EFA\u8BAE3"]}\u3002red=\u7ACB\u5373\u5C31\u533B\uFF0Cyellow=24-48\u5C0F\u65F6\u5185\u5C31\u533B\uFF0Cgreen=\u5728\u5BB6\u89C2\u5BDF\u3002\u4E0D\u8F93\u51FAJSON\u4EE5\u5916\u5185\u5BB9\u3002`;
+    try {
+      const out = await askClaude(sys, next.map((m) => ({ role: m.role, content: m.content })));
+      if (out.type === "question") {
+        setChat([...next, { role: "assistant", content: out.text }]);
+      } else if (out.type === "triage") {
+        setTriage(out);
+        setConsultLog((l) => [...l, { q: next[0].content, level: out.level, summary: out.summary }]);
+      } else throw new Error("bad");
+    } catch {
+      if (next.filter((m) => m.role === "assistant").length === 0) {
+        setChat([...next, { role: "assistant", content: `\u5410\u4E86\u51E0\u6B21\uFF1F${petLabel}\u73B0\u5728\u7684\u7CBE\u795E\u72B6\u6001\u600E\u4E48\u6837\uFF0C\u8FD8\u613F\u610F\u52A8\u5417\uFF1F` }]);
+      } else {
+        const t = { type: "triage", level: "red", summary: "\u5E7C\u5BA0\u591A\u6B21\u5455\u5410\u4F34\u7CBE\u795E\u5DEE\uFF0C\u8131\u6C34\u98CE\u9669\u9AD8", advice: ["\u7ACB\u5373\u524D\u5F80\u5C31\u8FD1\u533B\u9662", "\u643A\u5E26\u75AB\u82D7\u672C\u4E0E\u5455\u5410\u7269\u7167\u7247", "\u9014\u4E2D\u4E0D\u8981\u5582\u98DF\u5582\u6C34"] };
+        setTriage(t);
+        setConsultLog((l) => [...l, { q: next[0].content, level: "red", summary: t.summary }]);
+      }
+    }
+    setChatBusy(false);
+  }
+  useEffect(() => {
+    if (screen !== "badge") return;
+    const cv = canvasRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext("2d");
+    const S = 320;
+    cv.width = S;
+    cv.height = S;
+    const draw = (img) => {
+      ctx.clearRect(0, 0, S, S);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(S / 2, S / 2, S / 2 - 22, 0, Math.PI * 2);
+      ctx.clip();
+      if (img) {
+        const r = Math.max((S - 44) / img.width, (S - 44) / img.height);
+        ctx.drawImage(img, S / 2 - img.width * r / 2, S / 2 - img.height * r / 2, img.width * r, img.height * r);
+      } else {
+        ctx.fillStyle = C.tealSoft;
+        ctx.fillRect(0, 0, S, S);
+        ctx.font = "110px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("\u{1F431}", S / 2, S / 2 + 8);
+      }
+      ctx.restore();
+      ctx.lineWidth = 12;
+      ctx.strokeStyle = C.yellow;
+      ctx.beginPath();
+      ctx.arc(S / 2, S / 2, S / 2 - 16, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = C.ink;
+      ctx.beginPath();
+      ctx.arc(S / 2, S / 2, S / 2 - 8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,.75)";
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.arc(S / 2, S / 2, S / 2 - 34, -2.4, -1.7);
+      ctx.stroke();
+      ctx.fillStyle = C.ink;
+      ctx.font = `700 20px ${F.display}`;
+      ctx.textAlign = "center";
+      ctx.fillText(`\u263E ${petLabel} \u263E`, S / 2, S - 46);
+    };
+    if (profile.photo) {
+      const img = new Image();
+      img.onload = () => draw(img);
+      img.src = profile.photo;
+    } else draw(null);
+  }, [screen, profile.photo, profile.type, petLabel]);
+  const paperBg = {
+    minHeight: "100vh",
+    background: C.paper,
+    fontFamily: F.body,
+    color: C.ink,
+    backgroundImage: `radial-gradient(${C.line} .8px, transparent .8px)`,
+    backgroundSize: "18px 18px",
+    display: "flex",
+    justifyContent: "center"
+  };
+  const phone = { width: "100%", maxWidth: 420, padding: "20px 18px 40px", position: "relative" };
+  function TopBar({ back, title }) {
+    return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("button", { onClick: back, "aria-label": "\u8FD4\u56DE", style: {
+      border: `1.5px solid ${C.ink}`,
+      background: C.paperLight,
+      borderRadius: 8,
+      width: 34,
+      height: 34,
+      cursor: "pointer",
+      fontSize: 16,
+      lineHeight: 1
+    } }, "\u2190"), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 18, fontWeight: 700 } }, title));
+  }
+  if (screen === "home") {
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement(Eyebrow, null, "XIHONGMEN \xB7 \u5BA0\u7269\u7ECF\u6D4E\u8D5B\u9053"), /* @__PURE__ */ React.createElement(Stamp, { text: "\u897F\u7EA2\u95E8\u9547\u76D1\u5236", color: C.teal, rotate: 8 })), /* @__PURE__ */ React.createElement("h1", { style: {
+      fontFamily: F.display,
+      fontSize: 44,
+      lineHeight: 1.2,
+      margin: "26px 0 6px",
+      fontWeight: 900,
+      letterSpacing: 1
+    } }, "\u65B0\u624B\u517B\u732B", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("span", { style: { color: C.verm } }, "\u4E0D\u614C"), "\u624B\u518C"), /* @__PURE__ */ React.createElement("p", { style: { color: C.inkSoft, fontSize: 15, lineHeight: 1.8, margin: "8px 0 0" } }, "\u6361\u5230\u4E00\u53EA\u5C0F\u732B\u7684\u7B2C\u4E00\u5929\uFF0C\u4F60\u4E0D\u9700\u8981\u8BFB\u5B8C\u6574\u4E2A\u5C0F\u7EA2\u4E66\u3002", /* @__PURE__ */ React.createElement("br", null), "\u5F55\u5165\u6863\u6848\uFF0C\u62FF\u5230\u4E00\u4EFD", /* @__PURE__ */ React.createElement("b", { style: { color: C.ink } }, "\u53EA\u5C5E\u4E8ETA\u7684\u517B\u62A4\u65F6\u95F4\u7EBF"), "\uFF1B", /* @__PURE__ */ React.createElement("br", null), "\u51FA\u72B6\u51B5\u65F6\u95EE\u4E00\u53E5\uFF0C\u6211\u4EEC\u544A\u8BC9\u4F60\u2014\u2014", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("b", { style: { color: C.ink } }, "\u8BE5\u89C2\u5BDF\uFF0C\u8FD8\u662F\u8BE5\u53BB\u9547\u4E0A\u54EA\u5BB6\u533B\u9662\u3002")), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { margin: "26px 0", padding: 18, transform: "rotate(-1deg)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: {
+      width: 64,
+      height: 64,
+      borderRadius: 10,
+      background: C.yellowSoft,
+      border: `1.5px dashed ${C.ink}`,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 34
+    } }, "\u{1F431}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 17 } }, "\u732B\u54AA\u517B\u62A4\u624B\u518C"), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, marginTop: 4 } }, "NO. 2026-XHM-001 \uFF5C \u7EBF\u4E0A\u5224\u65AD \xB7 \u7EBF\u4E0B\u843D\u5730")))), /* @__PURE__ */ React.createElement(Btn, { onClick: () => {
+      setScreen("onboard");
+      setStep(0);
+    } }, "\u5F00\u59CB\u517B\u5BA0\u4E4B\u65C5 \u2192"), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", marginTop: 14, fontSize: 12, color: C.inkSoft, fontFamily: F.mono } }, "\u8986\u76D6\u897F\u7EA2\u95E8\u9547 6 \u5BB6\u5BA0\u7269\u533B\u9662 \xB7 \u542B 1 \u5BB6 24 \u5C0F\u65F6\u6025\u8BCA")));
+  }
+  if (screen === "onboard") {
+    const steps = ["\u600E\u4E48\u517B", "\u53EB\u4EC0\u4E48", "\u591A\u5927\u4E86", "\u505A\u8FC7\u4EC0\u4E48"];
+    const canNext = step === 0 ? !!profile.lifestyle : step === 1 ? !!profile.name && !!profile.breed : step === 2 ? !!profile.ageMonths && !!profile.weight && !!profile.sex : true;
+    const chip = (active) => ({
+      padding: "10px 16px",
+      borderRadius: 999,
+      cursor: "pointer",
+      fontSize: 14,
+      border: `1.5px solid ${C.ink}`,
+      fontWeight: active ? 700 : 400,
+      background: active ? C.teal : C.paperLight,
+      color: active ? "#fff" : C.ink
+    });
+    const input = {
+      width: "100%",
+      padding: "12px 14px",
+      borderRadius: 10,
+      fontSize: 15,
+      border: `1.5px solid ${C.ink}`,
+      background: C.paperLight,
+      fontFamily: F.body,
+      color: C.ink,
+      outline: "none",
+      boxSizing: "border-box"
+    };
+    const breeds = ["\u82F1\u77ED", "\u7F8E\u77ED", "\u7530\u56ED\u732B", "\u5E03\u5076", "\u6A58\u732B", "\u72F8\u82B1"];
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => step ? setStep(step - 1) : setScreen("home"), title: "\u5EFA\u7ACB\u5BA0\u7269\u6863\u6848" }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 22 } }, steps.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: s, style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { height: 5, borderRadius: 3, background: i <= step ? C.verm : C.line } }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, marginTop: 4, color: i <= step ? C.ink : C.inkSoft, fontFamily: F.mono } }, s)))), step === 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: "0 0 8px" } }, "\u732B\u54AA\u600E\u4E48\u517B\uFF1F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.inkSoft, margin: "0 0 18px", lineHeight: 1.7 } }, "\u5168\u5BA4\u5185\u548C\u4F1A\u51FA\u95E8\u7684\u732B\uFF0C\u75AB\u82D7\u548C\u9A71\u866B\u65B9\u6848\u4E0D\u4E00\u6837\u3002"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12 } }, [["indoor", "\u{1F3E0}", "\u5168\u5BA4\u5185"], ["outdoor", "\u{1F33F}", "\u4F1A\u51FA\u95E8"]].map(([v, e, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => setProfile((p) => ({ ...p, lifestyle: v })), style: {
+      flex: 1,
+      padding: "26px 0",
+      borderRadius: 14,
+      cursor: "pointer",
+      border: `1.5px solid ${C.ink}`,
+      fontSize: 15,
+      fontWeight: 600,
+      background: profile.lifestyle === v ? C.vermSoft : C.paperLight,
+      boxShadow: profile.lifestyle === v ? `3px 3px 0 ${C.ink}` : "none"
+    } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 44 } }, e), l)))), step === 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: 0 } }, "\u5B83\u53EB\u4EC0\u4E48\u540D\u5B57\uFF1F"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        style: input,
+        placeholder: "\u6635\u79F0\uFF0C\u6BD4\u5982\uFF1A\u8C46\u8C46",
+        value: profile.name,
+        onChange: (e) => setProfile((p) => ({ ...p, name: e.target.value }))
+      }
+    ), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft } }, "\u54C1\u79CD\uFF08\u9009\u4E00\u4E2A\u6216\u81EA\u5DF1\u586B\uFF09"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, breeds.map((b) => /* @__PURE__ */ React.createElement("button", { key: b, style: chip(profile.breed === b), onClick: () => setProfile((p) => ({ ...p, breed: b })) }, b))), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        style: input,
+        placeholder: "\u6216\u8F93\u5165\u5176\u4ED6\u54C1\u79CD",
+        value: breeds.includes(profile.breed) ? "" : profile.breed,
+        onChange: (e) => setProfile((p) => ({ ...p, breed: e.target.value }))
+      }
+    )), step === 2 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: 0 } }, petLabel, "\u591A\u5927\u4E86\uFF1F"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        style: input,
+        type: "number",
+        placeholder: "\u6708\u9F84\uFF08\u6708\uFF09",
+        value: profile.ageMonths,
+        onChange: (e) => setProfile((p) => ({ ...p, ageMonths: e.target.value }))
+      }
+    ), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        style: input,
+        type: "number",
+        placeholder: "\u4F53\u91CD\uFF08kg\uFF09",
+        value: profile.weight,
+        onChange: (e) => setProfile((p) => ({ ...p, weight: e.target.value }))
+      }
+    )), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft } }, "\u6027\u522B\u4E0E\u7EDD\u80B2"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, ["\u516C", "\u6BCD"].map((s) => /* @__PURE__ */ React.createElement("button", { key: s, style: chip(profile.sex === s), onClick: () => setProfile((p) => ({ ...p, sex: s })) }, s)), ["\u5DF2\u7EDD\u80B2", "\u672A\u7EDD\u80B2"].map((s) => /* @__PURE__ */ React.createElement("button", { key: s, style: chip(profile.neutered === s), onClick: () => setProfile((p) => ({ ...p, neutered: s })) }, s)))), step === 3 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: 0 } }, "\u8FD9\u4E9B\u4E8B\uFF0C\u505A\u8FC7\u54EA\u4E9B\uFF1F"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, ["\u9996\u9488\u75AB\u82D7", "\u5168\u7A0B\u75AB\u82D7", "\u4F53\u5185\u9A71\u866B", "\u4F53\u5916\u9A71\u866B", "\u7EDD\u80B2", "\u90FD\u6CA1\u505A\u8FC7"].map((d) => {
+      const on = profile.done.includes(d);
+      return /* @__PURE__ */ React.createElement("button", { key: d, style: chip(on), onClick: () => setProfile((p) => ({
+        ...p,
+        done: d === "\u90FD\u6CA1\u505A\u8FC7" ? on ? [] : ["\u90FD\u6CA1\u505A\u8FC7"] : on ? p.done.filter((x) => x !== d) : [...p.done.filter((x) => x !== "\u90FD\u6CA1\u505A\u8FC7"), d]
+      })) }, on ? "\u2713 " : "", d);
+    })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft, marginTop: 6 } }, "\u5BB6\u91CC\u8FD8\u6709\u8C01\uFF1F\uFF08\u591A\u9009\uFF0C\u5F71\u54CD\u9A71\u866B\u65B9\u6848\uFF09"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, ["\u8FD8\u6709\u72D7", "\u8FD8\u6709\u5176\u4ED6\u732B", "\u6709\u9E1F\u6216\u9C7C", "\u5C31TA\u4E00\u4E2A"].map((d) => {
+      const on = profile.family.includes(d);
+      return /* @__PURE__ */ React.createElement("button", { key: d, style: chip(on), onClick: () => setProfile((p) => ({
+        ...p,
+        family: d === "\u5C31TA\u4E00\u4E2A" ? on ? [] : ["\u5C31TA\u4E00\u4E2A"] : on ? p.family.filter((x) => x !== d) : [...p.family.filter((x) => x !== "\u5C31TA\u4E00\u4E2A"), d]
+      })) }, on ? "\u2713 " : "", d);
+    })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft } }, "\u6765\u5F20\u7167\u7247\uFF08\u9009\u586B\uFF0C\u4E4B\u540E\u80FD\u505A\u6210\u5427\u5527\uFF09"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        ref: fileRef,
+        type: "file",
+        accept: "image/*",
+        style: { display: "none" },
+        onChange: (e) => {
+          const f = e.target.files?.[0];
+          if (!f) return;
+          const r = new FileReader();
+          r.onload = () => setProfile((p) => ({ ...p, photo: r.result }));
+          r.readAsDataURL(f);
+        }
+      }
+    ), /* @__PURE__ */ React.createElement("button", { onClick: () => fileRef.current?.click(), style: {
+      border: `1.5px dashed ${C.ink}`,
+      borderRadius: 14,
+      background: C.paperLight,
+      padding: profile.photo ? 8 : 26,
+      cursor: "pointer"
+    } }, profile.photo ? /* @__PURE__ */ React.createElement("img", { src: profile.photo, alt: "\u5BA0\u7269\u7167\u7247", style: { width: "100%", borderRadius: 10, display: "block" } }) : /* @__PURE__ */ React.createElement("span", { style: { color: C.inkSoft } }, "\u{1F4F7} \u70B9\u8FD9\u91CC\u4E0A\u4F20"))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 26 } }, step < 3 ? /* @__PURE__ */ React.createElement(Btn, { disabled: !canNext, onClick: () => setStep(step + 1) }, "\u4E0B\u4E00\u6B65") : /* @__PURE__ */ React.createElement(Btn, { onClick: generateTimeline }, "\u751F\u6210", petLabel, "\u7684\u517B\u62A4\u8BA1\u5212 \u2726"))));
+  }
+  if (screen === "timeline") {
+    const groups = [
+      ["week", "\u672C\u5468\u8981\u505A", C.verm, C.vermSoft],
+      ["month", "\u672C\u6708\u8BA1\u5212", C.yellow, C.yellowSoft],
+      ["future", "\u672A\u6765\u8282\u70B9", C.teal, C.tealSoft]
+    ];
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u517B\u62A4\u624B\u518C"), /* @__PURE__ */ React.createElement(Eyebrow, null, "XIHONGMEN \xB7 \u5BA0\u7269\u7ECF\u6D4E")), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 20, transform: "rotate(-0.6deg)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: {
+      width: 58,
+      height: 58,
+      borderRadius: "50%",
+      overflow: "hidden",
+      flexShrink: 0,
+      border: `2px solid ${C.ink}`,
+      background: C.tealSoft,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 30
+    } }, profile.photo ? /* @__PURE__ */ React.createElement("img", { src: profile.photo, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }) : "\u{1F431}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 19 } }, petLabel), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, marginTop: 2 } }, profile.breed || "\u672A\u77E5\u54C1\u79CD", " \xB7 ", profile.ageMonths || "?", "\u6708\u9F84 \xB7 ", profile.weight || "?", "kg \xB7 ", profile.sex, profile.neutered ? ` \xB7 ${profile.neutered}` : "")), /* @__PURE__ */ React.createElement(Stamp, { text: "\u6863\u6848\u5DF2\u5EFA", color: C.teal, rotate: 10 }))), tlLoading ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.inkSoft } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, animation: "spin 1.6s linear infinite", display: "inline-block" } }, "\u2726"), /* @__PURE__ */ React.createElement("style", null, `@keyframes spin{to{transform:rotate(360deg)}}`), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, fontFamily: F.display, fontSize: 16 } }, "\u6B63\u5728\u4E3A", petLabel, "\u5B9A\u5236\u517B\u62A4\u8BA1\u5212\u2026"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, marginTop: 6, fontFamily: F.mono } }, "\u7ED3\u5408\u54C1\u79CD \xB7 \u6708\u9F84 \xB7 \u5DF2\u5B8C\u6210\u4E8B\u9879")) : /* @__PURE__ */ React.createElement(React.Fragment, null, groups.map(([key, label, color, soft]) => {
+      const items = (timeline || []).filter((t) => t.period === key);
+      if (!items.length) return null;
+      return /* @__PURE__ */ React.createElement("div", { key, style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: "50%", background: color, border: `1.5px solid ${C.ink}` } }), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 16 } }, label), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, borderTop: `1.5px dashed ${C.line}` } })), /* @__PURE__ */ React.createElement("div", { style: { borderLeft: `2px solid ${C.ink}`, marginLeft: 4, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 10 } }, items.map((t, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
+        background: soft,
+        border: `1.5px solid ${C.ink}`,
+        borderRadius: 10,
+        padding: "12px 14px",
+        position: "relative"
+      } }, /* @__PURE__ */ React.createElement("span", { style: {
+        position: "absolute",
+        left: -24,
+        top: 16,
+        width: 12,
+        height: 12,
+        borderRadius: "50%",
+        background: C.paper,
+        border: `2.5px solid ${C.ink}`
+      } }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } }, /* @__PURE__ */ React.createElement("b", { style: { fontSize: 15 } }, t.category === "\u533B\u5631" ? "\u{1F3E5} " : "", t.title), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, whiteSpace: "nowrap" } }, t.suggested_date)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, t.reason), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, marginTop: 8, fontFamily: F.mono, color: C.teal } }, "\u{1F514} \u5230\u671F\u63D0\u9192 \xB7 \u5DF2\u5F00\u542F\uFF08demo\uFF09")))));
+    }), tlSource === "cache" && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, textAlign: "center", marginBottom: 10 } }, "\u26A1 \u5F53\u524D\u4E3A\u9884\u7F6E\u6F14\u793A\u6570\u636E\uFF08\u63A5\u53E3\u672A\u8FDE\u901A\uFF09"), /* @__PURE__ */ React.createElement(Btn, { variant: "ink", onClick: () => {
+      setChat([]);
+      setTriage(null);
+      setScreen("consult");
+    } }, petLabel, "\u597D\u50CF\u4E0D\u592A\u5BF9\u52B2\uFF1F\u{1FA7A} \u95EE\u4E00\u4E0B")), /* @__PURE__ */ React.createElement(TabBar, { active: "timeline", go: setScreen })));
+  }
+  if (screen === "consult") {
+    const levelMap = {
+      red: { label: "\u7ACB\u5373\u5C31\u533B", color: C.verm, soft: C.vermSoft, icon: "\u{1F6A8}" },
+      yellow: { label: "24-48\u5C0F\u65F6\u5185\u5C31\u533B", color: C.yellow, soft: C.yellowSoft, icon: "\u26A0\uFE0F" },
+      green: { label: "\u5728\u5BB6\u89C2\u5BDF", color: C.teal, soft: C.tealSoft, icon: "\u2705" }
+    };
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, display: "flex", flexDirection: "column", minHeight: "100vh", paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "AI\u95EE\u8BCA"), /* @__PURE__ */ React.createElement(Eyebrow, null, petLabel, " \xB7 ", profile.ageMonths || "?", "\u6708\u9F84")), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 10 } }, chat.length === 0 && !triage && /* @__PURE__ */ React.createElement("div", { style: { color: C.inkSoft, fontSize: 13.5, lineHeight: 1.8, padding: "6px 2px" } }, "\u63CF\u8FF0\u4E00\u4E0B", petLabel, "\u7684\u72B6\u51B5\uFF0C\u6216\u70B9\u4E0B\u9762\u7684\u5FEB\u6377\u6807\u7B7E\u3002", /* @__PURE__ */ React.createElement("br", null), "\u6211\u4F1A\u7ED3\u5408", petLabel, "\u7684\u6863\u6848\uFF08", profile.ageMonths || "?", "\u6708\u9F84\uFF09\u5224\u65AD\u4E25\u91CD\u7A0B\u5EA6\u3002"), chat.map((m, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
+      alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+      maxWidth: "82%",
+      padding: "10px 14px",
+      fontSize: 14.5,
+      lineHeight: 1.6,
+      border: `1.5px solid ${C.ink}`,
+      borderRadius: m.role === "user" ? "14px 14px 3px 14px" : "14px 14px 14px 3px",
+      background: m.role === "user" ? C.teal : C.paperLight,
+      color: m.role === "user" ? "#fff" : C.ink
+    } }, m.content)), chatBusy && /* @__PURE__ */ React.createElement("div", { style: { color: C.inkSoft, fontSize: 13, fontFamily: F.mono } }, "\u5206\u6790\u4E2D\u2026"), triage && (() => {
+      const L = levelMap[triage.level] || levelMap.yellow;
+      return /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, borderColor: L.color, borderWidth: 2 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 26 } }, L.icon), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 900, fontSize: 18, color: L.color } }, L.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft, marginTop: 2 } }, triage.summary))), /* @__PURE__ */ React.createElement("ul", { style: { margin: "12px 0 0", paddingLeft: 18, fontSize: 13.5, lineHeight: 1.9 } }, (triage.advice || []).map((a, i) => /* @__PURE__ */ React.createElement("li", { key: i }, a))), (triage.level === "red" || triage.level === "yellow") && /* @__PURE__ */ React.createElement(Btn, { style: { marginTop: 14 }, onClick: () => setScreen("hospitals") }, "\u67E5\u770B\u9644\u8FD1\u533B\u9662 \u2192", triage.level === "red" ? "\uFF08\u542B24\u5C0F\u65F6\u6025\u8BCA\uFF09" : ""), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.inkSoft, marginTop: 10, fontFamily: F.mono } }, "AI\u5206\u8BCA\u4EC5\u4F9B\u53C2\u8003\uFF0C\u7D27\u6025\u60C5\u51B5\u8BF7\u76F4\u63A5\u5C31\u533B"));
+    })(), /* @__PURE__ */ React.createElement("div", { ref: chatEndRef })), !triage && /* @__PURE__ */ React.createElement("div", { style: { paddingTop: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" } }, ["\u5455\u5410\u4E86", "\u4E0D\u5403\u4E1C\u897F", "\u5C3F\u4E0D\u51FA\u6765"].map((c) => /* @__PURE__ */ React.createElement("button", { key: c, onClick: () => sendConsult(c), disabled: chatBusy, style: {
+      padding: "8px 14px",
+      borderRadius: 999,
+      border: `1.5px dashed ${C.ink}`,
+      background: C.paperLight,
+      cursor: "pointer",
+      fontSize: 13.5
+    } }, c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        value: chatInput,
+        onChange: (e) => setChatInput(e.target.value),
+        onKeyDown: (e) => e.key === "Enter" && sendConsult(chatInput),
+        placeholder: `\u63CF\u8FF0${petLabel}\u7684\u72B6\u51B5\u2026`,
+        style: {
+          flex: 1,
+          padding: "12px 14px",
+          borderRadius: 10,
+          fontSize: 14.5,
+          border: `1.5px solid ${C.ink}`,
+          background: C.paperLight,
+          outline: "none",
+          fontFamily: F.body,
+          color: C.ink
+        }
+      }
+    ), /* @__PURE__ */ React.createElement(Btn, { style: { width: "auto", padding: "12px 18px" }, disabled: chatBusy, onClick: () => sendConsult(chatInput) }, "\u53D1\u9001"))), triage && /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", style: { marginTop: 12 }, onClick: () => {
+      setChat([]);
+      setTriage(null);
+    } }, "\u518D\u95EE\u4E00\u6B21"), /* @__PURE__ */ React.createElement(TabBar, { active: "consult", go: setScreen })));
+  }
+  if (screen === "hospitals") {
+    const sorted = [...HOSPITALS].sort((a, b) => (b.is24h ? 1 : 0) - (a.is24h ? 1 : 0));
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u897F\u7EA2\u95E8\u9547 \xB7 \u5BA0\u7269\u533B\u9662"), triage && /* @__PURE__ */ React.createElement(Stamp, { text: triage.level === "red" ? "\u6025\u8BCA\u4F18\u5148" : "\u5C3D\u5FEB\u5C31\u533B", rotate: 8 })), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 0, overflow: "hidden", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 380 190", style: { display: "block", width: "100%", background: "#EFE7D2" }, role: "img", "aria-label": "\u897F\u7EA2\u95E8\u9547\u533B\u9662\u5206\u5E03\u793A\u610F\u56FE" }, /* @__PURE__ */ React.createElement("path", { d: "M0,95 C90,70 160,120 380,85", stroke: C.line, strokeWidth: "14", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M120,0 C130,80 110,130 140,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M250,0 C240,70 270,120 255,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "26", fontSize: "13", fill: C.inkSoft, fontFamily: F.display }, "\u897F\u7EA2\u95E8\u9547\uFF08\u793A\u610F\uFF09"), /* @__PURE__ */ React.createElement("circle", { cx: "190", cy: "100", r: "7", fill: C.teal, stroke: C.ink, strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: "202", y: "104", fontSize: "11", fill: C.ink }, "\u4F60\u5728\u8FD9"), [[95, 60, true], [280, 55, false], [70, 140, false], [305, 130, false], [180, 160, false], [235, 92, false]].map(([x, y, is24], i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: x, cy: y, r: is24 ? 9 : 6.5, fill: is24 ? C.verm : C.paperLight, stroke: C.ink, strokeWidth: "2" }), is24 && /* @__PURE__ */ React.createElement("text", { x: x + 13, y: y + 4, fontSize: "11", fontWeight: "700", fill: C.verm }, "24h"))))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u6309 24\u5C0F\u65F6\u4F18\u5148 + \u8DDD\u79BB \u6392\u5E8F \uFF5C \u6B63\u5F0F\u7248\u63A5\u5165\u9AD8\u5FB7\u5730\u56FE"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, sorted.map((h, i) => /* @__PURE__ */ React.createElement(PerforatedCard, { key: i, style: {
+      padding: 14,
+      borderColor: h.is24h ? C.verm : C.ink,
+      borderWidth: h.is24h ? 2 : 1.5,
+      background: h.is24h ? C.vermSoft : C.paperLight
+    } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 15 } }, h.name, h.is24h && /* @__PURE__ */ React.createElement("span", { style: {
+      marginLeft: 8,
+      fontSize: 10.5,
+      background: C.verm,
+      color: "#fff",
+      borderRadius: 5,
+      padding: "2px 7px",
+      fontFamily: F.mono,
+      verticalAlign: "2px"
+    } }, "24\u5C0F\u65F6 \xB7 \u73B0\u5728\u8425\u4E1A")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, h.address)), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 12, color: C.teal, whiteSpace: "nowrap", fontWeight: 700 } }, h.dist)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } }, /* @__PURE__ */ React.createElement("a", { href: `tel:${h.phone}`, style: {
+      flex: 1,
+      textAlign: "center",
+      textDecoration: "none",
+      fontSize: 13.5,
+      fontWeight: 700,
+      border: `1.5px solid ${C.ink}`,
+      borderRadius: 8,
+      padding: "9px 0",
+      background: h.is24h ? C.verm : C.ink,
+      color: "#fff"
+    } }, "\u{1F4DE} \u4E00\u952E\u62E8\u53F7"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+      setVisitHospital(h);
+      setVisitForm({ date: (/* @__PURE__ */ new Date()).toLocaleDateString("zh-CN"), diagnosis: "", advice: "" });
+      setScreen("visit");
+    }, style: {
+      flex: 1,
+      textAlign: "center",
+      fontSize: 13.5,
+      cursor: "pointer",
+      border: `1.5px dashed ${C.ink}`,
+      borderRadius: 8,
+      padding: "9px 0",
+      color: C.ink,
+      background: "transparent",
+      fontFamily: F.body
+    } }, "\u270F\uFE0F \u8BB0\u5F55\u672C\u6B21\u5C31\u8BCA"))))), /* @__PURE__ */ React.createElement(TabBar, { active: "hospitals", go: setScreen })));
+  }
+  if (screen === "mine") {
+    const Row = ({ icon, label, sub, onClick }) => /* @__PURE__ */ React.createElement("button", { onClick, style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      width: "100%",
+      textAlign: "left",
+      background: C.paperLight,
+      border: `1.5px solid ${C.ink}`,
+      borderRadius: 12,
+      padding: "14px",
+      cursor: "pointer",
+      fontFamily: F.body
+    } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22 } }, icon), /* @__PURE__ */ React.createElement("span", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontWeight: 700, fontSize: 15, color: C.ink } }, label), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: 12, color: C.inkSoft, marginTop: 2 } }, sub)), /* @__PURE__ */ React.createElement("span", { style: { color: C.inkSoft } }, "\u2192"));
+    const weekCount = (timeline || []).filter((t) => t.period === "week").length;
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u6211\u7684"), /* @__PURE__ */ React.createElement(Eyebrow, null, "PET RESIDENT \xB7 XHM")), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14, transform: "rotate(-0.6deg)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: {
+      width: 62,
+      height: 62,
+      borderRadius: "50%",
+      overflow: "hidden",
+      flexShrink: 0,
+      border: `2px solid ${C.ink}`,
+      background: C.tealSoft,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 32
+    } }, profile.photo ? /* @__PURE__ */ React.createElement("img", { src: profile.photo, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }) : "\u{1F431}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 19 } }, petLabel), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, marginTop: 2 } }, profile.breed || "\u672A\u77E5\u54C1\u79CD", " \xB7 ", profile.ageMonths || "?", "\u6708\u9F84 \xB7 ", profile.weight || "?", "kg")), /* @__PURE__ */ React.createElement(Stamp, { text: "\u897F\u7EA2\u95E8\u9547\u732B\u54AA\u5C45\u6C11", color: C.teal, rotate: 10 })), /* @__PURE__ */ React.createElement("div", { style: {
+      display: "flex",
+      marginTop: 14,
+      borderTop: `1.5px dashed ${C.line}`,
+      paddingTop: 12,
+      textAlign: "center",
+      fontFamily: F.mono
+    } }, [[weekCount, "\u672C\u5468\u5F85\u529E"], [visits.length, "\u5C31\u8BCA\u8BB0\u5F55"], [consultLog.length, "\u95EE\u8BCA\u8BB0\u5F55"]].map(([n, l], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { flex: 1, borderLeft: i ? `1.5px dashed ${C.line}` : "none" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: C.verm } }, n), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.inkSoft, marginTop: 2 } }, l))))), /* @__PURE__ */ React.createElement("button", { onClick: () => setScreen("badge"), style: {
+      width: "100%",
+      textAlign: "left",
+      cursor: "pointer",
+      marginBottom: 14,
+      background: C.vermSoft,
+      border: `1.5px solid ${C.ink}`,
+      borderRadius: 12,
+      boxShadow: `3px 3px 0 ${C.line}`,
+      padding: "14px 16px",
+      fontFamily: F.body,
+      display: "flex",
+      alignItems: "center",
+      gap: 12
+    } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 30 } }, "\u2726"), /* @__PURE__ */ React.createElement("span", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontFamily: F.display, fontWeight: 800, fontSize: 16, color: C.ink } }, "\u628A", petLabel, "\u5E26\u5728\u8EAB\u8FB9"), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: 12, color: C.inkSoft, marginTop: 2 } }, "\u7167\u7247\u4E00\u952E\u751F\u6210\u5427\u5527 / \u51B0\u7BB1\u8D34 \xB7 9.9\u5143\u8D77")), /* @__PURE__ */ React.createElement("span", { style: { color: C.verm, fontWeight: 800 } }, "\u2192")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(Row, { icon: "\u{1F4CB}", label: "\u5065\u5EB7\u6863\u6848", sub: "\u4F53\u91CD\u66F2\u7EBF \xB7 \u75AB\u82D7\u8BB0\u5F55 \xB7 \u95EE\u8BCA\u4E0E\u5C31\u8BCA\u6C89\u6DC0", onClick: () => setScreen("archive") }), /* @__PURE__ */ React.createElement(Row, { icon: "\u270F\uFE0F", label: "\u7F16\u8F91\u5BA0\u7269\u6863\u6848", sub: "\u4FE1\u606F\u6709\u53D8\u5316\uFF1F\u91CD\u65B0\u5F55\u5165\u4F1A\u66F4\u65B0\u65F6\u95F4\u7EBF", onClick: () => {
+      setStep(0);
+      setScreen("onboard");
+    } }), /* @__PURE__ */ React.createElement(Row, { icon: "\u{1F3D8}\uFE0F", label: "\u5173\u4E8E \xB7 \u897F\u7EA2\u95E8\u9547\u5BA0\u7269\u670D\u52A1", sub: "2026\u4EA7\u4E1A\u521B\u65B0\u9ED1\u5BA2\u677E \xB7 \u5BA0\u7269\u7ECF\u6D4E\u8D5B\u9053", onClick: () => {
+    } })), /* @__PURE__ */ React.createElement(TabBar, { active: "mine", go: setScreen })));
+  }
+  if (screen === "visit") {
+    const input = {
+      width: "100%",
+      padding: "12px 14px",
+      borderRadius: 10,
+      fontSize: 14.5,
+      border: `1.5px solid ${C.ink}`,
+      background: C.paperLight,
+      fontFamily: F.body,
+      color: C.ink,
+      outline: "none",
+      boxSizing: "border-box"
+    };
+    async function saveVisit() {
+      if (!visitForm.diagnosis.trim() && !visitForm.advice.trim()) return;
+      setVisitSaving(true);
+      let items;
+      try {
+        items = await askClaude(
+          `\u628A\u533B\u751F\u7684\u8BCA\u65AD\u548C\u533B\u5631\u89E3\u6790\u4E3A\u732B\u54AA\u517B\u62A4\u5F85\u529E\u4E8B\u9879\u3002\u8F93\u51FAJSON\u6570\u7EC4\uFF0C\u6BCF\u9879\u542B {title, period(week|month|future), suggested_date, reason, category:"\u533B\u5631"}\uFF1B1-4\u9879\uFF1Breason\u572815\u5B57\u5185\u3002\u53EA\u8F93\u51FAJSON\u6570\u7EC4\uFF0C\u4E0D\u8F93\u51FA\u5176\u4ED6\u6587\u5B57\u3002`,
+          [{ role: "user", content: `\u732B\uFF1A${profile.breed} ${profile.ageMonths}\u6708\u9F84\u3002\u8BCA\u65AD\uFF1A${visitForm.diagnosis}\u3002\u533B\u5631\uFF1A${visitForm.advice}` }]
+        );
+        if (!Array.isArray(items) || !items.length) throw new Error("bad");
+      } catch {
+        items = [{ title: "\u6309\u533B\u5631\u590D\u8BCA", period: "week", suggested_date: "\u9075\u533B\u5631", reason: "\u6765\u81EA\u672C\u6B21\u5C31\u8BCA\u8BB0\u5F55", category: "\u533B\u5631" }];
+      }
+      setTimeline((prev) => [...items, ...prev || []]);
+      setVisits((v) => [...v, { ...visitForm, hospital: visitHospital?.name || "\u672A\u8BB0\u5F55\u533B\u9662", added: items.length }]);
+      setVisitSaving(false);
+      setScreen("archive");
+    }
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("hospitals"), title: "\u8BB0\u5F55\u672C\u6B21\u5C31\u8BCA" }), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft } }, "\u5C31\u8BCA\u533B\u9662"), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, fontSize: 16, marginTop: 4 } }, visitHospital?.name || "\u672A\u9009\u62E9\u533B\u9662"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.inkSoft, marginTop: 2 } }, visitForm.date)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, marginBottom: 6, fontWeight: 600 } }, "\u533B\u751F\u600E\u4E48\u8BF4\uFF08\u8BCA\u65AD\uFF09"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        style: input,
+        placeholder: "\u4F8B\uFF1A\u6025\u6027\u80A0\u80C3\u708E\uFF0C\u8F7B\u5EA6\u8131\u6C34",
+        value: visitForm.diagnosis,
+        onChange: (e) => setVisitForm((f) => ({ ...f, diagnosis: e.target.value }))
+      }
+    )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, marginBottom: 6, fontWeight: 600 } }, "\u533B\u5631\uFF08\u7167\u7740\u8BF4\u7684\u8BB0\u5C31\u884C\uFF09"), /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        style: { ...input, minHeight: 96, resize: "vertical" },
+        placeholder: "\u4F8B\uFF1A\u7981\u98DF12\u5C0F\u65F6\uFF0C\u76CA\u751F\u83CC\u6BCF\u5929\u4E24\u6B21\u8FDE\u55825\u5929\uFF0C3\u5929\u540E\u590D\u8BCA",
+        value: visitForm.advice,
+        onChange: (e) => setVisitForm((f) => ({ ...f, advice: e.target.value }))
+      }
+    )), /* @__PURE__ */ React.createElement("div", { style: {
+      fontSize: 12.5,
+      color: C.teal,
+      background: C.tealSoft,
+      borderRadius: 10,
+      border: `1.5px dashed ${C.teal}`,
+      padding: "10px 12px",
+      lineHeight: 1.7
+    } }, "\u2726 \u4FDD\u5B58\u540E\uFF0C\u533B\u5631\u4F1A\u81EA\u52A8\u53D8\u6210", petLabel, '\u65F6\u95F4\u7EBF\u4E0A\u7684\u5F85\u529E\u2014\u2014\u6BD4\u5982"3\u5929\u540E\u590D\u8BCA"\u4F1A\u51FA\u73B0\u5728\u300C\u672C\u5468\u8981\u505A\u300D\u91CC\u3002'), /* @__PURE__ */ React.createElement(Btn, { disabled: visitSaving, onClick: saveVisit }, visitSaving ? "\u6B63\u5728\u628A\u533B\u5631\u5199\u8FDB\u65F6\u95F4\u7EBF\u2026" : "\u4FDD\u5B58\u5E76\u540C\u6B65\u5230\u517B\u62A4\u624B\u518C"))));
+  }
+  if (screen === "badge") {
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, textAlign: "center" } }, /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("mine"), title: "\u628ATA\u5E26\u5728\u8EAB\u8FB9" }), /* @__PURE__ */ React.createElement(Eyebrow, null, "PET GOODS \xB7 \u5B9A\u5236\u5427\u5527"), /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: F.display, fontSize: 26, margin: "10px 0 22px" } }, petLabel, "\u7684\u4E13\u5C5E\u5427\u5527"), /* @__PURE__ */ React.createElement("div", { style: { display: "inline-block", transform: "rotate(-2deg)", filter: `drop-shadow(4px 5px 0 ${C.line})` } }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: 260, height: 260, borderRadius: "50%" } })), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.inkSoft, lineHeight: 1.8, margin: "22px 0" } }, "\u7531\u6863\u6848\u7167\u7247\u4E00\u952E\u751F\u6210 \xB7 \u652F\u6301\u5427\u5527 / \u51B0\u7BB1\u8D34 / \u94A5\u5319\u6263", /* @__PURE__ */ React.createElement("br", null), "\u5BF9\u63A51688\u67D4\u6027\u4F9B\u5E94\u94FE\uFF0C9.9\u5143\u8D77 \xB7 \u897F\u7EA2\u95E8\u9547\u5BA0\u7269\u6587\u521B"), /* @__PURE__ */ React.createElement(Btn, { onClick: () => {
+      const cv = canvasRef.current;
+      if (!cv) return;
+      const a = document.createElement("a");
+      a.download = `${petLabel}-badge.png`;
+      a.href = cv.toDataURL("image/png");
+      a.click();
+    } }, "\u4FDD\u5B58\u5427\u5527\u56FE \u2193"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => setScreen("mine") }, "\u8FD4\u56DE\u300C\u6211\u7684\u300D"))));
+  }
+  if (screen === "archive") {
+    const w = [1.1, 1.4, Number(profile.weight) || 1.8];
+    const pts = w.map((v, i) => `${30 + i * 140},${120 - v * 40}`).join(" ");
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("mine"), title: `${petLabel}\u7684\u5065\u5EB7\u6863\u6848` }), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 8 } }, "\u4F53\u91CD\u66F2\u7EBF"), /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 340 140", style: { width: "100%" }, role: "img", "aria-label": "\u4F53\u91CD\u66F2\u7EBF" }, /* @__PURE__ */ React.createElement("polyline", { points: pts, fill: "none", stroke: C.teal, strokeWidth: "3" }), w.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: 30 + i * 140, cy: 120 - v * 40, r: "6", fill: C.paperLight, stroke: C.ink, strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: 30 + i * 140, y: 120 - v * 40 - 12, fontSize: "12", textAnchor: "middle", fill: C.ink, fontFamily: F.mono }, v, "kg"))))), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 10 } }, "\u75AB\u82D7\u8BB0\u5F55"), [["\u9996\u9488\u75AB\u82D7", profile.done.includes("\u9996\u9488\u75AB\u82D7") || profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u7B2C\u4E8C\u9488\u75AB\u82D7", profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u72C2\u72AC\u75AB\u82D7", false]].map(([n, ok], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
+      display: "flex",
+      justifyContent: "space-between",
+      padding: "9px 0",
+      borderBottom: i < 2 ? `1.5px dashed ${C.line}` : "none",
+      fontSize: 14
+    } }, /* @__PURE__ */ React.createElement("span", null, n), /* @__PURE__ */ React.createElement("span", { style: { color: ok ? C.teal : C.verm, fontWeight: 700, fontFamily: F.mono, fontSize: 12.5 } }, ok ? "\u2713 \u5DF2\u5B8C\u6210" : "\u25CB \u5F85\u63A5\u79CD")))), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 10 } }, "\u5C31\u8BCA\u8BB0\u5F55"), visits.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft } }, '\u770B\u5B8C\u533B\u751F\u540E\uFF0C\u5728\u533B\u9662\u5361\u7247\u4E0A\u70B9"\u8BB0\u5F55\u672C\u6B21\u5C31\u8BCA"\uFF0C\u533B\u5631\u4F1A\u81EA\u52A8\u53D8\u6210\u65F6\u95F4\u7EBF\u5F85\u529E\u3002') : visits.map((v, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { padding: "9px 0", borderBottom: i < visits.length - 1 ? `1.5px dashed ${C.line}` : "none", fontSize: 13.5 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } }, /* @__PURE__ */ React.createElement("b", null, v.hospital), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.mono, fontSize: 11, color: C.inkSoft, whiteSpace: "nowrap" } }, v.date)), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 3 } }, "\u8BCA\u65AD\uFF1A", v.diagnosis || "\u2014"), /* @__PURE__ */ React.createElement("div", { style: { color: C.inkSoft, fontSize: 12.5, marginTop: 2 } }, "\u533B\u5631\uFF1A", v.advice || "\u2014"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.teal, fontFamily: F.mono, marginTop: 4 } }, "\u2713 \u5DF2\u751F\u6210 ", v.added, " \u6761\u65F6\u95F4\u7EBF\u5F85\u529E")))), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 10 } }, "\u95EE\u8BCA\u8BB0\u5F55"), consultLog.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft } }, "\u8FD8\u6CA1\u6709\u95EE\u8BCA\u8BB0\u5F55\u3002\u6BCF\u6B21\u95EE\u8BCA\u7ED3\u8BBA\u90FD\u4F1A\u81EA\u52A8\u6C89\u6DC0\u5728\u8FD9\u91CC\u3002") : consultLog.map((r, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { fontSize: 13.5, padding: "8px 0", borderBottom: `1.5px dashed ${C.line}` } }, /* @__PURE__ */ React.createElement("b", null, "\u300C", r.q, "\u300D"), " \u2192 ", /* @__PURE__ */ React.createElement("span", { style: { color: r.level === "red" ? C.verm : r.level === "yellow" ? C.yellow : C.teal, fontWeight: 700 } }, r.level === "red" ? "\u7ACB\u5373\u5C31\u533B" : r.level === "yellow" ? "\u5C3D\u5FEB\u5C31\u533B" : "\u5728\u5BB6\u89C2\u5BDF"), /* @__PURE__ */ React.createElement("div", { style: { color: C.inkSoft, fontSize: 12, marginTop: 2 } }, r.summary))))));
+  }
+  return null;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(PetGuardian));
+
+</script>
+</body>
+</html>
