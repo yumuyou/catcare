@@ -54,15 +54,16 @@ const TIMELINE_FALLBACK = [
   { title: "\u7B2C\u4E09\u9488\u75AB\u82D7\uFF0B\u72C2\u72AC\u75AB\u82D7", period: "future", suggested_date: "\u7EA64\u5468\u540E", reason: "\u5B8C\u6210\u57FA\u7840\u514D\u75AB\u7A0B\u5E8F", category: "\u75AB\u82D7" },
   { title: "\u7EDD\u80B2\u8BC4\u4F30", period: "future", suggested_date: "6\u6708\u9F84", reason: "\u89C6\u53D1\u80B2\u60C5\u51B5\u4E0E\u533B\u751F\u5546\u8BAE", category: "\u4F53\u68C0" }
 ];
-// API配置：打开页面时带 ?key=sk-xxx&base=https://中转地址 即可保存到localStorage，之后不用再带
+// API配置：打开页面时带 ?key=xxx（智谱key自动识别，也可显式加 &provider=zhipu）&base=中转地址 即可保存到localStorage，之后不用再带
 (function initApiConfig() {
   const qs = new URLSearchParams(location.search);
   if (qs.get("key")) localStorage.setItem("cc_api_key", qs.get("key"));
   if (qs.get("base")) localStorage.setItem("cc_api_base", qs.get("base"));
   if (qs.get("model")) localStorage.setItem("cc_model", qs.get("model"));
+  if (qs.get("provider")) localStorage.setItem("cc_provider", qs.get("provider"));
   if (qs.get("amap")) localStorage.setItem("cc_amap_key", qs.get("amap"));
   if (qs.get("amapsec")) localStorage.setItem("cc_amap_sec", qs.get("amapsec"));
-  if (qs.get("key") || qs.get("base") || qs.get("model") || qs.get("amap") || qs.get("amapsec")) {
+  if (qs.get("key") || qs.get("base") || qs.get("model") || qs.get("provider") || qs.get("amap") || qs.get("amapsec")) {
     history.replaceState(null, "", location.pathname);
   }
 })();
@@ -107,31 +108,59 @@ const BOOT_PET = BOOT.active >= 0 ? BOOT.pets[BOOT.active] : null;
 const EMPTY_PROFILE = { type: "cat", lifestyle: "", breed: "", name: "", ageMonths: "", weight: "", sex: "", neutered: "", done: [], family: [], photo: null };
 function isNeutered(p) { return p.neutered === "已绝育" || p.done.includes("绝育"); }
 function stripNeuterItems(items, p) { return isNeutered(p) ? items.filter((t) => !/绝育/.test(t.title || "") && !/(建议|安排|预约|评估)绝育|绝育(评估|手术|时机)/.test(t.reason || "")) : items; }
+const ZHIPU_BASE = "https://open.bigmodel.cn/api/paas";
+function apiProvider() {
+  const p = localStorage.getItem("cc_provider");
+  if (p) return p;
+  // 智谱 key 格式为 "id.secret"，据此自动识别
+  return /^[0-9a-f]{16,}\.\w+$/i.test(localStorage.getItem("cc_api_key") || "") ? "zhipu" : "anthropic";
+}
 async function askClaude(system, messages) {
-  const base = (localStorage.getItem("cc_api_base") || "https://api.anthropic.com").replace(/\/+$/, "");
   const key = localStorage.getItem("cc_api_key") || "";
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20000);
-  const res = await fetch(base + "/v1/messages", {
-    method: "POST",
-    signal: ctrl.signal,
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({
-      model: localStorage.getItem("cc_model") || "claude-sonnet-4-6",
-      max_tokens: 1e3,
-      system,
-      messages
-    })
-  });
-  clearTimeout(timer);
-  if (!res.ok) throw new Error("api " + res.status);
-  const data = await res.json();
-  const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+  let res, text;
+  try {
+    if (apiProvider() === "zhipu") {
+      const base = (localStorage.getItem("cc_api_base") || ZHIPU_BASE).replace(/\/+$/, "");
+      res = await fetch(base + "/v4/chat/completions", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+        body: JSON.stringify({
+          model: localStorage.getItem("cc_model") || "glm-4.7",
+          thinking: { type: "disabled" },
+          max_tokens: 1e3,
+          messages: [{ role: "system", content: system }, ...messages]
+        })
+      });
+      if (!res.ok) throw new Error("api " + res.status);
+      text = (await res.json()).choices?.[0]?.message?.content || "";
+    } else {
+      const base = (localStorage.getItem("cc_api_base") || "https://api.anthropic.com").replace(/\/+$/, "");
+      res = await fetch(base + "/v1/messages", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: localStorage.getItem("cc_model") || "claude-sonnet-4-6",
+          max_tokens: 1e3,
+          system,
+          messages
+        })
+      });
+      if (!res.ok) throw new Error("api " + res.status);
+      const data = await res.json();
+      text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+    }
+  } finally {
+    clearTimeout(timer);
+  }
   return JSON.parse(text.replace(/```json|```/g, "").trim());
 }
 const KB = [
