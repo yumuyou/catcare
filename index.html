@@ -233,6 +233,38 @@ function haversineKm(a, b) {
   return R * 2 * Math.asin(Math.sqrt(s));
 }
 function fmtDist(km) { return km < 1 ? Math.round(km * 1000) + "m" : (Math.round(km * 10) / 10) + "km"; }
+// 异地模式：定位距西红门超过阈值时，用AI联网搜索真实位置周边的宠物医院
+const AWAY_KM = 5;
+async function searchNearbyHospitals(pos) {
+  const key = localStorage.getItem("cc_api_key") || "";
+  if (!key || apiProvider() !== "zhipu") throw new Error("no zhipu key");
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 45000);
+  try {
+    const res = await fetch(ZHIPU_BASE + "/v4/chat/completions", {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({
+        model: "glm-4.7",
+        thinking: { type: "disabled" },
+        tools: [{ type: "web_search", web_search: { enable: true, search_result: true } }],
+        max_tokens: 1500,
+        messages: [
+          { role: "system", content: '你是本地生活助手。用户给出GPS坐标，先判断该坐标属于哪个城市哪个片区，再联网搜索推荐该片区的宠物医院。只输出JSON：{"area":"城市+片区名","hospitals":[{"name":"...","address":"...","phone":"...","is24h":true或false,"note":"15字内特色"}]}；医院4-6家；优先真实、近、评价好；不确定电话填空串，严禁编造电话。只输出JSON，不输出其他文字。' },
+          { role: "user", content: `我的坐标：经度${pos[0].toFixed(4)}，纬度${pos[1].toFixed(4)}。帮我找周边宠物医院，最好含24小时急诊` }
+        ]
+      })
+    });
+    if (!res.ok) throw new Error("api " + res.status);
+    const text = (await res.json()).choices?.[0]?.message?.content || "";
+    const out = JSON.parse(text.replace(/```json|```/g, "").trim());
+    if (!out || !Array.isArray(out.hospitals) || !out.hospitals.length) throw new Error("bad");
+    return out;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 // 真实定位：enabled 为 true 时才请求（避免一进首页就弹授权）；拿不到就回退镇中心
 function useGeoPos(enabled) {
   const [pos, setPos] = useState(null);
@@ -427,6 +459,16 @@ function PetGuardian() {
   const chatEndRef = useRef(null);
   const prevActiveRef = useRef(-1);
   const [geoPos, geoState] = useGeoPos(screen === "hospitals");
+  const [nearby, setNearby] = useState(null);
+  const [nearbyState, setNearbyState] = useState("idle");
+  const isAway = !!geoPos && haversineKm(geoPos, XHM_CENTER) > AWAY_KM;
+  useEffect(() => {
+    if (!isAway || nearbyState !== "idle") return;
+    setNearbyState("loading");
+    searchNearbyHospitals(geoPos)
+      .then((out) => { setNearby(out); setNearbyState("ok"); })
+      .catch(() => setNearbyState("fail"));
+  }, [isAway, nearbyState]);
   const fileRef = useRef(null);
   const reportRef = useRef(null);
   const canvasRef = useRef(null);
@@ -911,11 +953,12 @@ function PetGuardian() {
   }
   if (screen === "hospitals") {
     const origin = geoPos || XHM_CENTER;
-    const sorted = HOSPITALS.map((h) => {
+    const awayMode = isAway && nearbyState === "ok" && nearby;
+    const sorted = awayMode ? nearby.hospitals.map((h) => ({ ...h, dist: "", lng: 0, lat: 0 })).sort((a, b) => (b.is24h ? 1 : 0) - (a.is24h ? 1 : 0)) : HOSPITALS.map((h) => {
       const km = h.lng ? haversineKm(origin, [h.lng, h.lat]) : null;
       return { ...h, km, dist: km == null ? h.dist : fmtDist(km) };
     }).sort((a, b) => (b.is24h ? 1 : 0) - (a.is24h ? 1 : 0) || (a.km ?? 99) - (b.km ?? 99));
-    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, "\u897F\u7EA2\u95E8\u9547 \xB7 \u5BA0\u7269\u533B\u9662"), triage && /* @__PURE__ */ React.createElement(Stamp, { text: triage.level === "red" ? "\u6025\u8BCA\u4F18\u5148" : "\u5C3D\u5FEB\u5C31\u533B", rotate: 8 })), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 0, overflow: "hidden", marginBottom: 8 } }, /* @__PURE__ */ React.createElement(AMapView, { userPos: geoPos, located: geoState === "ok", hospitals: sorted, fallback: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 380 190", style: { display: "block", width: "100%", background: "#E8F0F6" }, role: "img", "aria-label": "\u897F\u7EA2\u95E8\u9547\u533B\u9662\u5206\u5E03\u793A\u610F\u56FE" }, /* @__PURE__ */ React.createElement("path", { d: "M0,95 C90,70 160,120 380,85", stroke: C.line, strokeWidth: "14", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M120,0 C130,80 110,130 140,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M250,0 C240,70 270,120 255,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "26", fontSize: "13", fill: C.inkSoft, fontFamily: F.display }, "\u897F\u7EA2\u95E8\u9547\uFF08\u793A\u610F\uFF09"), /* @__PURE__ */ React.createElement("circle", { cx: "190", cy: "100", r: "7", fill: C.teal, stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: "202", y: "104", fontSize: "11", fill: C.ink }, "\u4F60\u5728\u8FD9"), [[95, 60, true], [280, 55, false], [70, 140, false], [305, 130, false], [180, 160, false], [235, 92, false]].map(([x, y, is24], i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: x, cy: y, r: is24 ? 9 : 6.5, fill: is24 ? C.verm : C.paperLight, stroke: "#fff", strokeWidth: "2" }), is24 && /* @__PURE__ */ React.createElement("text", { x: x + 13, y: y + 4, fontSize: "11", fontWeight: "700", fill: C.verm }, "24h"))))})), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u6309 24\u5C0F\u65F6\u4F18\u5148 + \u8DDD\u79BB \u6392\u5E8F \uFF5C ", geoState === "ok" ? "\u8DDD\u79BB\u6309\u4F60\u7684\u5B9E\u65F6\u4F4D\u7F6E\u8BA1\u7B97" : geoState === "asking" ? "\u6B63\u5728\u83B7\u53D6\u5B9A\u4F4D\u2026" : "\u672A\u6388\u6743\u5B9A\u4F4D\uFF0C\u8DDD\u79BB\u6309\u9547\u4E2D\u5FC3\u4F30\u7B97"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, sorted.map((h, i) => /* @__PURE__ */ React.createElement(PerforatedCard, { key: i, style: {
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: { ...phone, paddingBottom: 110 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontSize: 21, fontWeight: 800 } }, awayMode ? nearby.area + " \xB7 \u5BA0\u7269\u533B\u9662" : "\u897F\u7EA2\u95E8\u9547 \xB7 \u5BA0\u7269\u533B\u9662"), triage && /* @__PURE__ */ React.createElement(Stamp, { text: triage.level === "red" ? "\u6025\u8BCA\u4F18\u5148" : "\u5C3D\u5FEB\u5C31\u533B", rotate: 8 })), isAway && nearbyState === "loading" && /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 14, marginBottom: 14, background: C.yellowSoft } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 700 } }, "\u{1F4CD} \u4F60\u4E0D\u5728\u897F\u7EA2\u95E8\u9547"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, "\u6B63\u5728\u8054\u7F51\u641C\u7D22\u4F60\u9644\u8FD1\u7684\u5BA0\u7269\u533B\u9662\u2026\uFF08\u7EA610\u79D2\uFF09")), isAway && nearbyState === "fail" && /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 14, marginBottom: 14, background: C.yellowSoft } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 700 } }, "\u{1F4CD} \u4F60\u4E0D\u5728\u897F\u7EA2\u95E8\u9547"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, "\u9644\u8FD1\u533B\u9662\u641C\u7D22\u5931\u8D25\uFF0C\u4E0B\u65B9\u4ECD\u4E3A\u897F\u7EA2\u95E8\u9547\u5217\u8868\u3002\u7D27\u6025\u60C5\u51B5\u8BF7\u76F4\u63A5\u5730\u56FEApp\u641C\u300C\u5BA0\u7269\u533B\u9662 24\u5C0F\u65F6\u300D\u3002"), /* @__PURE__ */ React.createElement("button", { onClick: () => setNearbyState("idle"), style: { marginTop: 8, padding: "7px 14px", borderRadius: 999, border: `1.5px dashed ${C.teal}`, background: "transparent", color: C.teal, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: F.body } }, "\u91CD\u8BD5\u641C\u7D22")), awayMode && /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 14, marginBottom: 14, background: C.tealSoft } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 700 } }, "\u{1F4CD} \u68C0\u6D4B\u5230\u4F60\u5728", nearby.area), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, "\u4EE5\u4E0B\u662FAI\u8054\u7F51\u641C\u7D22\u7684\u9644\u8FD1\u5BA0\u7269\u533B\u9662\uFF0C\u7535\u8BDD\u548C\u8425\u4E1A\u4FE1\u606F\u5EFA\u8BAE\u62E8\u6253\u524D\u6838\u5B9E\u3002")), !awayMode && /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 0, overflow: "hidden", marginBottom: 8 } }, /* @__PURE__ */ React.createElement(AMapView, { userPos: geoPos, located: geoState === "ok", hospitals: sorted, fallback: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 380 190", style: { display: "block", width: "100%", background: "#E8F0F6" }, role: "img", "aria-label": "\u897F\u7EA2\u95E8\u9547\u533B\u9662\u5206\u5E03\u793A\u610F\u56FE" }, /* @__PURE__ */ React.createElement("path", { d: "M0,95 C90,70 160,120 380,85", stroke: C.line, strokeWidth: "14", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M120,0 C130,80 110,130 140,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("path", { d: "M250,0 C240,70 270,120 255,190", stroke: C.line, strokeWidth: "10", fill: "none" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "26", fontSize: "13", fill: C.inkSoft, fontFamily: F.display }, "\u897F\u7EA2\u95E8\u9547\uFF08\u793A\u610F\uFF09"), /* @__PURE__ */ React.createElement("circle", { cx: "190", cy: "100", r: "7", fill: C.teal, stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: "202", y: "104", fontSize: "11", fill: C.ink }, "\u4F60\u5728\u8FD9"), [[95, 60, true], [280, 55, false], [70, 140, false], [305, 130, false], [180, 160, false], [235, 92, false]].map(([x, y, is24], i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: x, cy: y, r: is24 ? 9 : 6.5, fill: is24 ? C.verm : C.paperLight, stroke: "#fff", strokeWidth: "2" }), is24 && /* @__PURE__ */ React.createElement("text", { x: x + 13, y: y + 4, fontSize: "11", fontWeight: "700", fill: C.verm }, "24h"))))})), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, marginBottom: 14 } }, "\u6309 24\u5C0F\u65F6\u4F18\u5148 + \u8DDD\u79BB \u6392\u5E8F \uFF5C ", awayMode ? "AI\u8054\u7F51\u641C\u7D22\u7ED3\u679C \xB7 \u4FE1\u606F\u8BF7\u6838\u5B9E" : geoState === "ok" ? "\u8DDD\u79BB\u6309\u4F60\u7684\u5B9E\u65F6\u4F4D\u7F6E\u8BA1\u7B97" : geoState === "asking" ? "\u6B63\u5728\u83B7\u53D6\u5B9A\u4F4D\u2026" : "\u672A\u6388\u6743\u5B9A\u4F4D\uFF0C\u8DDD\u79BB\u6309\u9547\u4E2D\u5FC3\u4F30\u7B97"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, sorted.map((h, i) => /* @__PURE__ */ React.createElement(PerforatedCard, { key: i, style: {
       padding: 14,
       borderColor: h.is24h ? C.verm : C.ink,
       borderWidth: h.is24h ? 2 : 1.5,
@@ -929,7 +972,7 @@ function PetGuardian() {
       padding: "2px 7px",
       fontFamily: F.mono,
       verticalAlign: "2px"
-    } }, "24\u5C0F\u65F6 \xB7 \u73B0\u5728\u8425\u4E1A")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, h.address)), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 12, color: C.teal, whiteSpace: "nowrap", fontWeight: 700 } }, h.dist)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } }, /* @__PURE__ */ React.createElement("a", { href: `tel:${h.phone}`, style: {
+    } }, "24\u5C0F\u65F6 \xB7 \u73B0\u5728\u8425\u4E1A")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: C.inkSoft, marginTop: 4 } }, h.address), h.note && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.teal, marginTop: 3 } }, "\u2726 ", h.note)), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.mono, fontSize: 12, color: C.teal, whiteSpace: "nowrap", fontWeight: 700 } }, h.dist)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } }, h.phone ? /* @__PURE__ */ React.createElement("a", { href: `tel:${h.phone}`, style: {
       flex: 1,
       textAlign: "center",
       textDecoration: "none",
@@ -940,7 +983,16 @@ function PetGuardian() {
       padding: "9px 0",
       background: h.is24h ? C.verm : C.ink,
       color: "#fff"
-    } }, "\u{1F4DE} \u4E00\u952E\u62E8\u53F7"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+    } }, "\u{1F4DE} \u4E00\u952E\u62E8\u53F7") : /* @__PURE__ */ React.createElement("span", { style: {
+      flex: 1,
+      textAlign: "center",
+      fontSize: 13.5,
+      border: `1px solid ${C.line}`,
+      borderRadius: 8,
+      padding: "9px 0",
+      color: C.inkSoft,
+      background: C.paper
+    } }, "\u7535\u8BDD\u5F85\u6838\u5B9E"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
       setVisitHospital(h);
       setVisitForm({ date: (/* @__PURE__ */ new Date()).toLocaleDateString("zh-CN"), diagnosis: "", advice: "" });
       setScreen("visit");
