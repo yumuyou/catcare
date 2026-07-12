@@ -510,6 +510,8 @@ function PetGuardian() {
   const [weights, setWeights] = useState(BOOT_PET ? BOOT_PET.weights || [] : []);
   const [wInput, setWInput] = useState("");
   const [editPickerOpen, setEditPickerOpen] = useState(false);
+  const [doneAddOpen, setDoneAddOpen] = useState(false);
+  const [doneAddDate, setDoneAddDate] = useState("");
   const chatEndRef = useRef(null);
   const prevActiveRef = useRef(-1);
   const [geoPos, geoState] = useGeoPos(screen === "hospitals");
@@ -557,6 +559,39 @@ function PetGuardian() {
     setActivePet(i);
     loadPet(pets[i]);
     saveStore({ pets, active: i });
+  }
+  // 健康记录：done 的带日期版。老档案没有 doneLog 时从 done 推导（日期记"建档时"）
+  function getDoneLog(p) {
+    if (Array.isArray(p.doneLog) && p.doneLog.length) return p.doneLog;
+    return (p.done || []).filter((x) => x !== "都没做过").map((x) => ({ item: x, date: "建档时" }));
+  }
+  function fmtDay(d) {
+    if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return d || "";
+    const [y, m, day] = d.split("-");
+    return `${y}/${Number(m)}/${Number(day)}`;
+  }
+  function addDoneRecord(item, dateStr) {
+    const date = fmtDay(dateStr) || "今天";
+    setProfile((p) => ({
+      ...p,
+      neutered: item === "绝育" ? "已绝育" : p.neutered,
+      done: p.done.includes(item) ? p.done.filter((x) => x !== "都没做过") : [...p.done.filter((x) => x !== "都没做过"), item],
+      doneLog: [...getDoneLog(p), { item, date }]
+    }));
+  }
+  function removeDoneRecord(idx) {
+    setProfile((p) => {
+      const log = getDoneLog(p).slice();
+      const [rm] = log.splice(idx, 1);
+      if (!rm) return p;
+      const stillHas = log.some((e) => e.item === rm.item);
+      return {
+        ...p,
+        done: stillHas ? p.done : p.done.filter((x) => x !== rm.item),
+        neutered: rm.item === "绝育" && !stillHas ? "未绝育" : p.neutered,
+        doneLog: log
+      };
+    });
   }
   function startAddPet() {
     prevActiveRef.current = activePet;
@@ -1229,11 +1264,22 @@ function PetGuardian() {
         /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, [["indoor", "🏠 全室内"], ["outdoor", "🌿 会出门"]].map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, style: { ...chip(profile.lifestyle === v), flex: 1, textAlign: "center" }, onClick: () => setProfile((p) => ({ ...p, lifestyle: v })) }, l))),
         /* @__PURE__ */ React.createElement("div", { style: lbl }, "绝育状态"),
         /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, ["已绝育", "未绝育", "不清楚"].map((s) => /* @__PURE__ */ React.createElement("button", { key: s, style: { ...chip(profile.neutered === s), flex: 1, textAlign: "center" }, onClick: () => setProfile((p) => ({ ...p, neutered: s, done: s === "已绝育" ? p.done : p.done.filter((x) => x !== "绝育") })) }, s))),
-        /* @__PURE__ */ React.createElement("div", { style: lbl }, "已完成事项（多选）"),
-        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 7 } }, ["首针疫苗", "全程疫苗", "体内驱虫", "体外驱虫", "绝育", "都没做过"].filter((d) => d !== "绝育" || profile.neutered !== "已绝育").map((d) => {
-          const on = profile.done.includes(d);
-          return /* @__PURE__ */ React.createElement("button", { key: d, style: chip(on), onClick: () => setProfile((p) => ({ ...p, neutered: d === "绝育" && !on ? "已绝育" : p.neutered, done: d === "都没做过" ? on ? [] : ["都没做过"] : on ? p.done.filter((x) => x !== d) : [...p.done.filter((x) => x !== "都没做过"), d] })) }, on ? "✓ " : "", d);
-        }), profile.neutered === "已绝育" && /* @__PURE__ */ React.createElement("span", { style: { ...chip(true), cursor: "default" } }, "✓ 已绝育")),
+        /* @__PURE__ */ React.createElement("div", { style: lbl }, "健康记录（做过什么 · 哪天做的）"),
+        (() => {
+          const log = getDoneLog(profile);
+          return /* @__PURE__ */ React.createElement(React.Fragment, null,
+            log.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft, padding: "6px 0" } }, "还没有记录，点下面「＋ 添加一条」") : log.map((e, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", alignItems: "center", gap: 8, padding: "10px 2px", borderBottom: `1.5px dashed ${C.line}`, fontSize: 14 } },
+              /* @__PURE__ */ React.createElement("span", { style: { color: C.teal, fontWeight: 700 } }, "✓"),
+              /* @__PURE__ */ React.createElement("span", { style: { flex: 1 } }, e.item),
+              /* @__PURE__ */ React.createElement("span", { style: { fontFamily: F.mono, fontSize: 11.5, color: C.inkSoft } }, e.date),
+              /* @__PURE__ */ React.createElement("button", { "aria-label": "删除这条记录", onClick: () => removeDoneRecord(i), style: { border: "none", background: "transparent", color: C.inkSoft, cursor: "pointer", fontSize: 13, padding: "2px 6px" } }, "✕"))),
+            doneAddOpen ? /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, border: `1.5px dashed ${C.teal}`, borderRadius: 12, padding: 12, background: C.tealSoft } },
+              /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, marginBottom: 6, fontWeight: 600 } }, "哪一天做的？"),
+              /* @__PURE__ */ React.createElement("input", { type: "date", value: doneAddDate, onChange: (e) => setDoneAddDate(e.target.value), style: { ...input, marginBottom: 10 } }),
+              /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, marginBottom: 6, fontWeight: 600 } }, "做了什么？点一下就记上"),
+              /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 7 } }, ["首针疫苗", "全程疫苗", "狂犬疫苗", "体内驱虫", "体外驱虫", "绝育", "体检"].map((o) => /* @__PURE__ */ React.createElement("button", { key: o, style: chip(false), onClick: () => { addDoneRecord(o, doneAddDate); setDoneAddOpen(false); } }, "＋ ", o))),
+              /* @__PURE__ */ React.createElement("button", { onClick: () => setDoneAddOpen(false), style: { marginTop: 10, width: "100%", padding: "8px 0", borderRadius: 10, border: "none", background: "transparent", color: C.inkSoft, fontSize: 12.5, cursor: "pointer", fontFamily: F.body } }, "取消")) : /* @__PURE__ */ React.createElement("button", { onClick: () => { setDoneAddDate(new Date().toISOString().slice(0, 10)); setDoneAddOpen(true); }, style: { marginTop: 10, width: "100%", padding: "10px 0", borderRadius: 10, border: `1.5px dashed ${C.teal}`, background: "transparent", color: C.teal, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: F.body } }, "＋ 添加一条记录"));
+        })(),
         /* @__PURE__ */ React.createElement("div", { style: lbl }, "家里还有谁（多选，影响驱虫方案）"),
         /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 7 } }, ["还有狗", "还有其他猫", "有鸟或鱼", "就TA一个"].map((d) => {
           const on = profile.family.includes(d);
@@ -1262,7 +1308,7 @@ function PetGuardian() {
       setProfile((p) => ({ ...p, weight: String(kg) }));
       setWInput("");
     }
-    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("mine"), title: `${petLabel}\u7684\u5065\u5EB7\u6863\u6848` }), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 8 } }, "\u4F53\u91CD\u66F2\u7EBF"), weights.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft, padding: "18px 0", textAlign: "center" } }, "\u8FD8\u6CA1\u6709\u4F53\u91CD\u8BB0\u5F55\uFF0C\u5728\u4E0B\u65B9\u8BB0\u7B2C\u4E00\u7B14\u5427") : /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 340 140", style: { width: "100%" }, role: "img", "aria-label": "\u4F53\u91CD\u66F2\u7EBF" }, w.length > 1 && /* @__PURE__ */ React.createElement("polyline", { points: pts, fill: "none", stroke: C.teal, strokeWidth: "3" }), w.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: X(i), cy: Y(v), r: "6", fill: C.paperLight, stroke: C.teal, strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: X(i), y: Y(v) - 12, fontSize: "12", textAnchor: "middle", fill: C.ink, fontFamily: F.mono }, v, "kg"), /* @__PURE__ */ React.createElement("text", { x: X(i), y: 132, fontSize: "10", textAnchor: "middle", fill: C.inkSoft, fontFamily: F.mono }, weights[i].label)))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } }, /* @__PURE__ */ React.createElement("input", { type: "number", step: "0.1", min: "0", placeholder: "\u4ECA\u5929\u79F0\u4E86\u591A\u91CD\uFF1F(kg)", value: wInput, onChange: (e) => setWInput(e.target.value), onKeyDown: (e) => { if (e.key === "Enter") addWeight(); }, style: { flex: 1, padding: "10px 12px", borderRadius: 10, fontSize: 14, border: `1px solid ${C.line}`, background: C.paperLight, fontFamily: F.body, color: C.ink, outline: "none" } }), /* @__PURE__ */ React.createElement("button", { onClick: addWeight, disabled: !wInput, style: { padding: "0 18px", borderRadius: 10, border: "none", background: wInput ? C.teal : C.line, color: "#fff", fontSize: 14, fontWeight: 700, cursor: wInput ? "pointer" : "not-allowed" } }, "\u8BB0\u4E00\u7B14"))), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 10 } }, "\u75AB\u82D7\u8BB0\u5F55"), [["\u9996\u9488\u75AB\u82D7", profile.done.includes("\u9996\u9488\u75AB\u82D7") || profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u7B2C\u4E8C\u9488\u75AB\u82D7", profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u72C2\u72AC\u75AB\u82D7", false]].map(([n, ok], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
+    return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone }, /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("mine"), title: `${petLabel}\u7684\u5065\u5EB7\u6863\u6848` }), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 8 } }, "\u4F53\u91CD\u66F2\u7EBF"), weights.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.inkSoft, padding: "18px 0", textAlign: "center" } }, "\u8FD8\u6CA1\u6709\u4F53\u91CD\u8BB0\u5F55\uFF0C\u5728\u4E0B\u65B9\u8BB0\u7B2C\u4E00\u7B14\u5427") : /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 340 140", style: { width: "100%" }, role: "img", "aria-label": "\u4F53\u91CD\u66F2\u7EBF" }, w.length > 1 && /* @__PURE__ */ React.createElement("polyline", { points: pts, fill: "none", stroke: C.teal, strokeWidth: "3" }), w.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: X(i), cy: Y(v), r: "6", fill: C.paperLight, stroke: C.teal, strokeWidth: "2" }), /* @__PURE__ */ React.createElement("text", { x: X(i), y: Y(v) - 12, fontSize: "12", textAnchor: "middle", fill: C.ink, fontFamily: F.mono }, v, "kg"), /* @__PURE__ */ React.createElement("text", { x: X(i), y: 132, fontSize: "10", textAnchor: "middle", fill: C.inkSoft, fontFamily: F.mono }, weights[i].label)))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } }, /* @__PURE__ */ React.createElement("input", { type: "number", step: "0.1", min: "0", placeholder: "\u4ECA\u5929\u79F0\u4E86\u591A\u91CD\uFF1F(kg)", value: wInput, onChange: (e) => setWInput(e.target.value), onKeyDown: (e) => { if (e.key === "Enter") addWeight(); }, style: { flex: 1, padding: "10px 12px", borderRadius: 10, fontSize: 14, border: `1px solid ${C.line}`, background: C.paperLight, fontFamily: F.body, color: C.ink, outline: "none" } }), /* @__PURE__ */ React.createElement("button", { onClick: addWeight, disabled: !wInput, style: { padding: "0 18px", borderRadius: 10, border: "none", background: wInput ? C.teal : C.line, color: "#fff", fontSize: 14, fontWeight: 700, cursor: wInput ? "pointer" : "not-allowed" } }, "\u8BB0\u4E00\u7B14"))), /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: F.display, fontWeight: 800, marginBottom: 10 } }, "\u75AB\u82D7\u8BB0\u5F55"), [["\u9996\u9488\u75AB\u82D7", profile.done.includes("\u9996\u9488\u75AB\u82D7") || profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u7B2C\u4E8C\u9488\u75AB\u82D7", profile.done.includes("\u5168\u7A0B\u75AB\u82D7")], ["\u72C2\u72AC\u75AB\u82D7", profile.done.includes("\u72C2\u72AC\u75AB\u82D7")]].map(([n, ok], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
       display: "flex",
       justifyContent: "space-between",
       padding: "9px 0",
