@@ -675,6 +675,16 @@ function PetGuardian() {
     }
     setKbBusy(false);
   }
+  // 问诊判断依据：检索知识库后按性别过滤（母猫不出公猫专属条目，反之亦然），
+  // 且分数须达阈值——弱相关宁可不显示，避免"母猫问绝食却推公猫尿闭"
+  function consultRefs(messages, summary) {
+    const q = messages.filter((m) => m.role === "user").map((m) => m.content).join(" ") + " " + (summary || "");
+    return kbSearch(q, 6).filter((h) => {
+      if (profile.sex === "母" && /公猫/.test(h.title + h.tags.join(""))) return false;
+      if (profile.sex === "公" && /母猫|发情/.test(h.title)) return false;
+      return h.score >= 5;
+    }).slice(0, 3);
+  }
   async function sendConsult(text) {
     if (!text.trim() || chatBusy) return;
     const next = [...chat, { role: "user", content: text.trim() }];
@@ -687,8 +697,7 @@ function PetGuardian() {
       if (out.type === "question") {
         setChat([...next, { role: "assistant", content: out.text }]);
       } else if (out.type === "triage") {
-        // 用用户描述的症状检索本地知识库，命中的条目作为可核对的判断依据展示
-        out.refs = kbSearch(next.filter((m) => m.role === "user").map((m) => m.content).join(" "), 3);
+        out.refs = consultRefs(next, out.summary);
         setTriage(out);
         setConsultLog((l) => [...l, { q: next[0].content, level: out.level, summary: out.summary }]);
       } else throw new Error("bad");
@@ -696,7 +705,7 @@ function PetGuardian() {
       if (next.filter((m) => m.role === "assistant").length === 0) {
         setChat([...next, { role: "assistant", content: `\u5410\u4E86\u51E0\u6B21\uFF1F${petLabel}\u73B0\u5728\u7684\u7CBE\u795E\u72B6\u6001\u600E\u4E48\u6837\uFF0C\u8FD8\u613F\u610F\u52A8\u5417\uFF1F` }]);
       } else {
-        const t = { type: "triage", level: "red", summary: "\u5E7C\u5BA0\u591A\u6B21\u5455\u5410\u4F34\u7CBE\u795E\u5DEE\uFF0C\u8131\u6C34\u98CE\u9669\u9AD8", advice: ["\u7ACB\u5373\u524D\u5F80\u5C31\u8FD1\u533B\u9662", "\u643A\u5E26\u75AB\u82D7\u672C\u4E0E\u5455\u5410\u7269\u7167\u7247", "\u9014\u4E2D\u4E0D\u8981\u5582\u98DF\u5582\u6C34"], refs: kbSearch(next.filter((m) => m.role === "user").map((m) => m.content).join(" "), 3) };
+        const t = { type: "triage", level: "red", summary: "\u5E7C\u5BA0\u591A\u6B21\u5455\u5410\u4F34\u7CBE\u795E\u5DEE\uFF0C\u8131\u6C34\u98CE\u9669\u9AD8", advice: ["\u7ACB\u5373\u524D\u5F80\u5C31\u8FD1\u533B\u9662", "\u643A\u5E26\u75AB\u82D7\u672C\u4E0E\u5455\u5410\u7269\u7167\u7247", "\u9014\u4E2D\u4E0D\u8981\u5582\u98DF\u5582\u6C34"], refs: consultRefs(next) };
         setTriage(t);
         setConsultLog((l) => [...l, { q: next[0].content, level: "red", summary: t.summary }]);
       }
@@ -1098,7 +1107,7 @@ function PetGuardian() {
       color: C.teal
     } }, "\u{1F9ED} \u5BFC\u822A"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
       setVisitHospital(h);
-      setVisitForm({ date: (/* @__PURE__ */ new Date()).toLocaleDateString("zh-CN"), diagnosis: "", advice: "" });
+      setVisitForm({ date: (/* @__PURE__ */ new Date()).toLocaleDateString("zh-CN"), diagnosis: "", advice: "", reports: [] });
       setScreen("visit");
     }, style: {
       flex: 1,
