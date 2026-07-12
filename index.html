@@ -1094,7 +1094,7 @@ function PetGuardian() {
       padding: "9px 0",
       color: C.inkSoft,
       background: C.paper
-    } }, "\u7535\u8BDD\u5F85\u6838\u5B9E"), awayMode && /* @__PURE__ */ React.createElement("a", { href: "https://uri.amap.com/search?keyword=" + encodeURIComponent(h.name + " " + (h.address || "")), target: "_blank", rel: "noreferrer", style: {
+    } }, "\u7535\u8BDD\u5F85\u6838\u5B9E"), /* @__PURE__ */ React.createElement("a", { href: h.lng ? `https://uri.amap.com/marker?position=${h.lng},${h.lat}&name=${encodeURIComponent(h.name)}` : "https://uri.amap.com/search?keyword=" + encodeURIComponent(h.name + " " + (h.address || "")), target: "_blank", rel: "noreferrer", style: {
       flex: 1,
       textAlign: "center",
       textDecoration: "none",
