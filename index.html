@@ -512,6 +512,7 @@ function PetGuardian() {
   const [editPickerOpen, setEditPickerOpen] = useState(false);
   const [doneAddOpen, setDoneAddOpen] = useState(false);
   const [doneAddDate, setDoneAddDate] = useState("");
+  const [editField, setEditField] = useState("");
   const chatEndRef = useRef(null);
   const prevActiveRef = useRef(-1);
   const [geoPos, geoState] = useGeoPos(screen === "hospitals");
@@ -1247,24 +1248,35 @@ function PetGuardian() {
     const breeds = ["英短", "美短", "田园猫", "布偶", "橘猫", "狸花"];
     return /* @__PURE__ */ React.createElement("div", { style: paperBg }, /* @__PURE__ */ React.createElement("div", { style: phone },
       /* @__PURE__ */ React.createElement(TopBar, { back: () => setScreen("mine"), title: `编辑${petLabel}的档案` }),
+      (() => {
+        const openF = (k) => setEditField(editField === k ? "" : k);
+        const closeF = () => setEditField("");
+        const FieldRow = ({ k, label, value, last, editor }) => /* @__PURE__ */ React.createElement("div", { style: { borderBottom: last ? "none" : `1.5px dashed ${C.line}` } },
+          /* @__PURE__ */ React.createElement("button", { onClick: () => openF(k), style: { width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "13px 2px", background: "transparent", border: "none", cursor: "pointer", fontFamily: F.body, textAlign: "left" } },
+            /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.inkSoft, width: 84, flexShrink: 0 } }, label),
+            /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontSize: 14.5, fontWeight: 600, color: value ? C.ink : C.inkSoft, minWidth: 0 } }, value || "未填写"),
+            /* @__PURE__ */ React.createElement("span", { style: { color: C.inkSoft, fontSize: 12, flexShrink: 0, transform: editField === k ? "rotate(90deg)" : "none", transition: "transform .15s" } }, "❯")),
+          editField === k && /* @__PURE__ */ React.createElement("div", { style: { padding: "0 2px 14px" } }, editor));
+        return /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: "6px 16px", marginBottom: 12 } },
+          FieldRow({ k: "name", label: "名字", value: profile.name, editor: /* @__PURE__ */ React.createElement("input", { style: input, value: profile.name, placeholder: "昵称", autoFocus: true, onChange: (e) => setProfile((p) => ({ ...p, name: e.target.value })) }) }),
+          FieldRow({ k: "breed", label: "品种", value: profile.breed, editor: /* @__PURE__ */ React.createElement("div", null,
+            /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 7 } }, breeds.map((b) => /* @__PURE__ */ React.createElement("button", { key: b, style: chip(profile.breed === b), onClick: () => { setProfile((p) => ({ ...p, breed: b })); closeF(); } }, b))),
+            /* @__PURE__ */ React.createElement("input", { style: { ...input, marginTop: 8 }, placeholder: "或输入其他品种", value: breeds.includes(profile.breed) ? "" : profile.breed, onChange: (e) => setProfile((p) => ({ ...p, breed: e.target.value })) })) }),
+          FieldRow({ k: "age", label: "月龄", value: profile.ageMonths ? `${profile.ageMonths} 个月` : "", editor: /* @__PURE__ */ React.createElement("input", { style: input, type: "number", autoFocus: true, value: profile.ageMonths, placeholder: "月龄（月）", onChange: (e) => setProfile((p) => ({ ...p, ageMonths: e.target.value })) }) }),
+          FieldRow({ k: "weight", label: "体重", value: profile.weight ? `${profile.weight} kg` : "", editor: /* @__PURE__ */ React.createElement("input", { style: input, type: "number", autoFocus: true, value: profile.weight, placeholder: "体重（kg）", onChange: (e) => setProfile((p) => ({ ...p, weight: e.target.value })) }) }),
+          FieldRow({ k: "sex", label: "性别", value: profile.sex ? (profile.sex === "公" ? "♂ 公" : "♀ 母") : "", editor: /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, [["公", "♂"], ["母", "♀"]].map(([s, mark]) => /* @__PURE__ */ React.createElement("button", { key: s, style: { ...chip(profile.sex === s), flex: 1, textAlign: "center" }, onClick: () => { setProfile((p) => ({ ...p, sex: s })); closeF(); } }, mark + " " + s))) }),
+          FieldRow({ k: "lifestyle", label: "生活方式", value: profile.lifestyle === "indoor" ? "🏠 全室内" : profile.lifestyle === "outdoor" ? "🌿 会出门" : "", editor: /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, [["indoor", "🏠 全室内"], ["outdoor", "🌿 会出门"]].map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, style: { ...chip(profile.lifestyle === v), flex: 1, textAlign: "center" }, onClick: () => { setProfile((p) => ({ ...p, lifestyle: v })); closeF(); } }, l))) }),
+          FieldRow({ k: "neutered", label: "绝育状态", value: profile.neutered, editor: /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, ["已绝育", "未绝育", "不清楚"].map((s) => /* @__PURE__ */ React.createElement("button", { key: s, style: { ...chip(profile.neutered === s), flex: 1, textAlign: "center" }, onClick: () => { setProfile((p) => ({ ...p, neutered: s, done: s === "已绝育" ? p.done : p.done.filter((x) => x !== "绝育") })); closeF(); } }, s))) }),
+          FieldRow({ k: "family", label: "家里还有谁", value: (profile.family || []).join("、"), editor: /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 7 } }, ["还有狗", "还有其他猫", "有鸟或鱼", "就TA一个"].map((d) => {
+            const on = profile.family.includes(d);
+            return /* @__PURE__ */ React.createElement("button", { key: d, style: chip(on), onClick: () => setProfile((p) => ({ ...p, family: d === "就TA一个" ? on ? [] : ["就TA一个"] : on ? p.family.filter((x) => x !== d) : [...p.family.filter((x) => x !== "就TA一个"), d] })) }, on ? "✓ " : "", d);
+          })) }),
+          FieldRow({ k: "photo", label: "照片", last: true, value: profile.photo ? "已上传 · 点开可换" : "", editor: /* @__PURE__ */ React.createElement("div", null,
+            /* @__PURE__ */ React.createElement("input", { ref: fileRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: (e) => { const f = e.target.files?.[0]; if (!f) return; readImage(f, (url) => setProfile((p) => ({ ...p, photo: url }))); } }),
+            /* @__PURE__ */ React.createElement("button", { onClick: () => fileRef.current?.click(), style: { border: `1.5px dashed ${C.line}`, borderRadius: 14, background: C.paperLight, padding: profile.photo ? 8 : 22, cursor: "pointer", width: "100%" } }, profile.photo ? /* @__PURE__ */ React.createElement("img", { src: profile.photo, alt: "宠物照片", style: { width: "100%", borderRadius: 10, display: "block" } }) : /* @__PURE__ */ React.createElement("span", { style: { color: C.inkSoft } }, "📷 点这里上传"))) }));
+      })(),
       /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 12 } },
-        /* @__PURE__ */ React.createElement("div", { style: secTitle }, "基本信息"),
-        /* @__PURE__ */ React.createElement("div", { style: lbl }, "名字"),
-        /* @__PURE__ */ React.createElement("input", { style: input, value: profile.name, placeholder: "昵称", onChange: (e) => setProfile((p) => ({ ...p, name: e.target.value })) }),
-        /* @__PURE__ */ React.createElement("div", { style: lbl }, "品种"),
-        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 7 } }, breeds.map((b) => /* @__PURE__ */ React.createElement("button", { key: b, style: chip(profile.breed === b), onClick: () => setProfile((p) => ({ ...p, breed: b })) }, b))),
-        /* @__PURE__ */ React.createElement("input", { style: { ...input, marginTop: 8 }, placeholder: "或输入其他品种", value: breeds.includes(profile.breed) ? "" : profile.breed, onChange: (e) => setProfile((p) => ({ ...p, breed: e.target.value })) }),
-        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } },
-          /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "月龄（月）"), /* @__PURE__ */ React.createElement("input", { style: input, type: "number", value: profile.ageMonths, onChange: (e) => setProfile((p) => ({ ...p, ageMonths: e.target.value })) })),
-          /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "体重（kg）"), /* @__PURE__ */ React.createElement("input", { style: input, type: "number", value: profile.weight, onChange: (e) => setProfile((p) => ({ ...p, weight: e.target.value })) }))),
-        /* @__PURE__ */ React.createElement("div", { style: lbl }, "性别"),
-        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, [["公", "♂"], ["母", "♀"]].map(([s, mark]) => /* @__PURE__ */ React.createElement("button", { key: s, style: { ...chip(profile.sex === s), flex: 1, textAlign: "center" }, onClick: () => setProfile((p) => ({ ...p, sex: s })) }, mark + " " + s)))),
-      /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 12 } },
-        /* @__PURE__ */ React.createElement("div", { style: secTitle }, "生活方式"),
-        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, [["indoor", "🏠 全室内"], ["outdoor", "🌿 会出门"]].map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, style: { ...chip(profile.lifestyle === v), flex: 1, textAlign: "center" }, onClick: () => setProfile((p) => ({ ...p, lifestyle: v })) }, l))),
-        /* @__PURE__ */ React.createElement("div", { style: lbl }, "绝育状态"),
-        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, ["已绝育", "未绝育", "不清楚"].map((s) => /* @__PURE__ */ React.createElement("button", { key: s, style: { ...chip(profile.neutered === s), flex: 1, textAlign: "center" }, onClick: () => setProfile((p) => ({ ...p, neutered: s, done: s === "已绝育" ? p.done : p.done.filter((x) => x !== "绝育") })) }, s))),
-        /* @__PURE__ */ React.createElement("div", { style: lbl }, "健康记录（做过什么 · 哪天做的）"),
+        /* @__PURE__ */ React.createElement("div", { style: secTitle }, "健康记录（做过什么 · 哪天做的）"),
         (() => {
           const log = getDoneLog(profile);
           return /* @__PURE__ */ React.createElement(React.Fragment, null,
@@ -1279,16 +1291,7 @@ function PetGuardian() {
               /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, marginBottom: 6, fontWeight: 600 } }, "做了什么？点一下就记上"),
               /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 7 } }, ["首针疫苗", "全程疫苗", "狂犬疫苗", "体内驱虫", "体外驱虫", "绝育", "体检"].map((o) => /* @__PURE__ */ React.createElement("button", { key: o, style: chip(false), onClick: () => { addDoneRecord(o, doneAddDate); setDoneAddOpen(false); } }, "＋ ", o))),
               /* @__PURE__ */ React.createElement("button", { onClick: () => setDoneAddOpen(false), style: { marginTop: 10, width: "100%", padding: "8px 0", borderRadius: 10, border: "none", background: "transparent", color: C.inkSoft, fontSize: 12.5, cursor: "pointer", fontFamily: F.body } }, "取消")) : /* @__PURE__ */ React.createElement("button", { onClick: () => { setDoneAddDate(new Date().toISOString().slice(0, 10)); setDoneAddOpen(true); }, style: { marginTop: 10, width: "100%", padding: "10px 0", borderRadius: 10, border: `1.5px dashed ${C.teal}`, background: "transparent", color: C.teal, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: F.body } }, "＋ 添加一条记录"));
-        })(),
-        /* @__PURE__ */ React.createElement("div", { style: lbl }, "家里还有谁（多选，影响驱虫方案）"),
-        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 7 } }, ["还有狗", "还有其他猫", "有鸟或鱼", "就TA一个"].map((d) => {
-          const on = profile.family.includes(d);
-          return /* @__PURE__ */ React.createElement("button", { key: d, style: chip(on), onClick: () => setProfile((p) => ({ ...p, family: d === "就TA一个" ? on ? [] : ["就TA一个"] : on ? p.family.filter((x) => x !== d) : [...p.family.filter((x) => x !== "就TA一个"), d] })) }, on ? "✓ " : "", d);
-        }))),
-      /* @__PURE__ */ React.createElement(PerforatedCard, { style: { padding: 16, marginBottom: 16 } },
-        /* @__PURE__ */ React.createElement("div", { style: secTitle }, "照片"),
-        /* @__PURE__ */ React.createElement("input", { ref: fileRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: (e) => { const f = e.target.files?.[0]; if (!f) return; readImage(f, (url) => setProfile((p) => ({ ...p, photo: url }))); } }),
-        /* @__PURE__ */ React.createElement("button", { onClick: () => fileRef.current?.click(), style: { border: `1.5px dashed ${C.line}`, borderRadius: 14, background: C.paperLight, padding: profile.photo ? 8 : 22, cursor: "pointer", width: "100%" } }, profile.photo ? /* @__PURE__ */ React.createElement("img", { src: profile.photo, alt: "宠物照片", style: { width: "100%", borderRadius: 10, display: "block" } }) : /* @__PURE__ */ React.createElement("span", { style: { color: C.inkSoft } }, "📷 点这里上传"))),
+        })()),
       /* @__PURE__ */ React.createElement(Btn, { onClick: generateTimeline }, "保存修改，更新养护计划 ✦"),
       /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, marginBottom: 20 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => setScreen("mine") }, "仅保存信息，不重新生成时间线")),
       /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.inkSoft, fontFamily: F.mono, textAlign: "center", marginBottom: 20 } }, "改动会实时保存 · 「更新养护计划」会按新档案重新生成时间线")));
