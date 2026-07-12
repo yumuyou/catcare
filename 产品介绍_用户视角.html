@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CatCare · 产品介绍（用户视角）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --paper: #EBF8F7; --card: #FFFFFF; --ink: #175A5E; --soft: #5E9095;
+    --teal: #00C2CE; --tealSoft: #DDF6F5; --red: #FF5D5D; --redSoft: #FFE9E9;
+    --yellow: #C77700; --yellowSoft: #FFF4DB; --line: #D5EEEC;
+  }
+  html, body { height: 100%; background: #0e2a2c; font-family: "PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif; color: var(--ink); }
+  .slide {
+    width: 100vw; height: 100vh; display: none; flex-direction: column;
+    justify-content: center; padding: 7vh 9vw;
+    background: linear-gradient(180deg, #DFF6F4 0%, #EBF8F7 30%);
+    position: relative; overflow: hidden;
+  }
+  .slide.active { display: flex; }
+  .eyebrow { font-family: ui-monospace, Menlo, monospace; font-size: 1.7vh; letter-spacing: 3px; color: var(--teal); font-weight: 700; margin-bottom: 2vh; }
+  h1 { font-size: 7.5vh; line-height: 1.18; margin-bottom: 3vh; }
+  h2 { font-size: 5.2vh; line-height: 1.25; margin-bottom: 3.4vh; }
+  .accent { color: var(--teal); }
+  .red { color: var(--red); }
+  p.lead { font-size: 2.8vh; line-height: 1.75; color: var(--soft); max-width: 68vw; }
+  .cards { display: flex; gap: 2.2vw; margin-top: 1vh; }
+  .card {
+    flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+    padding: 3.2vh 1.8vw; box-shadow: 0 4px 18px rgba(23,90,94,.08);
+  }
+  .card .big { font-size: 4.4vh; margin-bottom: 1.2vh; }
+  .card b { font-size: 2.5vh; display: block; margin-bottom: 1vh; }
+  .card span { font-size: 1.95vh; line-height: 1.7; color: var(--soft); }
+  .card .num { font-size: 5.5vh; font-weight: 800; color: var(--teal); margin-bottom: .6vh; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2vw; align-items: start; }
+  .quote { border-left: 5px solid var(--teal); padding: 1.8vh 2vw; background: var(--card); border-radius: 0 16px 16px 0; font-size: 2.5vh; line-height: 1.85; box-shadow: 0 4px 14px rgba(23,90,94,.08); }
+  .foot { position: absolute; bottom: 3.2vh; left: 9vw; right: 9vw; display: flex; justify-content: space-between; font-family: ui-monospace, Menlo, monospace; font-size: 1.5vh; color: var(--soft); }
+  .kbd { position: fixed; bottom: 2vh; right: 2vw; color: #ffffff66; font-size: 1.5vh; font-family: ui-monospace, Menlo, monospace; z-index: 10; }
+  .paw { position: absolute; font-size: 26vh; opacity: .06; right: -3vw; bottom: -6vh; transform: rotate(-14deg); pointer-events: none; }
+  /* 聊天气泡 */
+  .chat { display: flex; flex-direction: column; gap: 1.4vh; max-width: 40vw; }
+  .msg { padding: 1.4vh 1.4vw; font-size: 2.1vh; line-height: 1.6; border: 1px solid var(--line); max-width: 90%; }
+  .msg.me { align-self: flex-end; background: var(--teal); color: #fff; border-radius: 16px 16px 4px 16px; border-color: var(--teal); }
+  .msg.ai { align-self: flex-start; background: var(--card); border-radius: 16px 16px 16px 4px; }
+  .verdict { background: var(--tealSoft); border: 2px solid var(--teal); border-radius: 20px; padding: 3vh 2vw; }
+  .verdict h3 { color: var(--teal); font-size: 3.4vh; margin-bottom: 1.6vh; }
+  .verdict li { font-size: 2.1vh; line-height: 1.9; margin-left: 2.4vh; }
+  /* 前后对照 */
+  .before-after { display: flex; flex-direction: column; gap: 2.2vh; margin-top: 1vh; }
+  .ba-row { display: flex; align-items: center; gap: 1.5vw; font-size: 2.5vh; }
+  .ba-row .before { color: var(--soft); width: 34vw; }
+  .ba-row .arr { color: var(--teal); font-weight: 800; }
+  .ba-row .after { font-weight: 700; }
+  .hosp { border-radius: 16px; padding: 1.8vh 1.6vw; margin-bottom: 1.4vh; background: var(--card); border: 1px solid var(--line); box-shadow: 0 4px 14px rgba(23,90,94,.07); }
+  .hosp.er { background: var(--redSoft); border: 2px solid var(--red); }
+  .hosp b { font-size: 2.2vh; }
+  .hosp .tag { font-size: 1.5vh; background: var(--red); color: #fff; border-radius: 5px; padding: .3vh .7vw; margin-left: .6vw; font-family: ui-monospace, Menlo, monospace; }
+  .hosp .sub { font-size: 1.8vh; color: var(--soft); margin-top: .6vh; }
+  .hosp .act { font-size: 1.9vh; color: var(--teal); font-weight: 700; margin-top: .8vh; }
+  .money { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.8vw; margin-top: 1vh; }
+  .money .card b { display: flex; align-items: baseline; gap: .8vw; }
+  .money .stage { font-size: 1.55vh; font-family: ui-monospace, Menlo, monospace; color: var(--teal); background: var(--tealSoft); border-radius: 999px; padding: .35vh 1vw; display: inline-block; margin-bottom: 1.2vh; font-weight: 700; }
+  @media print {
+    @page { size: 338.7mm 190.5mm; margin: 0; }
+    html, body { height: auto; background: #fff; }
+    .slide {
+      display: flex !important; page-break-after: always;
+      width: 338.7mm; height: 190.5mm; padding: 14mm 26mm;
+    }
+    .slide:last-of-type { page-break-after: avoid; }
+    .kbd { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 1 封面 -->
+<section class="slide active">
+  <div class="paw">🐾</div>
+  <div class="eyebrow">2026 西红门镇产业创新黑客松 · 宠物经济赛道</div>
+  <h1>CatCare<br>捡到猫的第一晚，<span class="accent">你不用慌</span></h1>
+  <p class="lead">这份介绍不讲技术，只讲一件事：<br>一个从没养过猫的普通人，用 CatCare 的一周是什么样的。</p>
+  <div class="foot"><span>CatCare · 用户视角产品介绍</span><span>01</span></div>
+</section>
+
+<!-- 2 主角登场 -->
+<section class="slide">
+  <div class="eyebrow">先认识一下我们的用户</div>
+  <h2>小雨，26 岁，昨晚在小区捡到一只小猫</h2>
+  <div class="quote">
+    她给它取名「豆豆」。然后打开手机搜「捡到小猫怎么办」——<br>
+    攻略说要打疫苗，评论说先驱虫；有人说喂羊奶，有人说千万别；<br>
+    <b class="red">半小时后，她关掉了 23 个网页，比搜索之前更慌了。</b>
+  </div>
+  <p class="lead" style="margin-top:3.4vh">小雨不是个例——大量新手是「意外开始养猫」的：捡到的、朋友送的、临时接手的。<br>
+  他们缺的不是信息，是<b class="accent">「现在、我家这只猫、到底该怎么办」</b>的答案。</p>
+  <div class="foot"><span>CatCare · 用户故事</span><span>02</span></div>
+</section>
+
+<!-- 3 第1天 建档 -->
+<section class="slide">
+  <div class="eyebrow">第 1 天 · 小雨的问题：我到底该做什么？</div>
+  <h2>答 4 个问题，拿到一份<span class="accent">只属于豆豆的养护清单</span></h2>
+  <div class="cards" style="margin-bottom:2.6vh">
+    <div class="card" style="text-align:center"><div class="big">🏠</div><b style="display:block">怎么养</b><span>全室内</span></div>
+    <div class="card" style="text-align:center"><div class="big">😺</div><b style="display:block">叫什么</b><span>豆豆 · 田园猫</span></div>
+    <div class="card" style="text-align:center"><div class="big">📏</div><b style="display:block">多大了</b><span>约2月龄 · 0.9kg</span></div>
+    <div class="card" style="text-align:center"><div class="big">💉</div><b style="display:block">做过什么</b><span>都没做过</span></div>
+  </div>
+  <div class="card" style="background:var(--tealSoft);border-color:var(--tealSoft)">
+    <b style="color:var(--teal);font-size:2.1vh">↓ 豆豆的时间线（AI 按月龄、品种、生活方式即时生成）</b>
+    <div style="display:flex;gap:3vw;margin-top:1.4vh">
+      <span style="flex:1"><b class="red" style="font-size:2vh;display:block">本周要做</b>第二针疫苗 · 首次体内驱虫</span>
+      <span style="flex:1"><b style="color:var(--yellow);font-size:2vh;display:block">本月计划</b>体外驱虫 · 幼猫粮少食多餐</span>
+      <span style="flex:1"><b class="accent" style="font-size:2vh;display:block">未来节点</b>第三针+狂犬 · 6月龄绝育评估</span>
+    </div>
+  </div>
+  <p class="lead" style="margin-top:2.4vh;font-size:2.2vh">每个待办点开就是「怎么做」的 3 步指引 + 新手最容易踩的坑。做完打勾，像闯关一样。</p>
+  <div class="foot"><span>CatCare · 专属养护时间线</span><span>03</span></div>
+</section>
+
+<!-- 4 千猫千面 -->
+<section class="slide">
+  <div class="eyebrow">为什么说是「你家猫的」清单，不是网上抄的</div>
+  <h2>同样是猫，清单完全不同</h2>
+  <div class="grid2">
+    <div class="card"><div class="big">🌿</div><b>会出门的猫</b><span>自动加上狂犬疫苗、更勤的体外驱虫</span></div>
+    <div class="card"><div class="big">🐕</div><b>家里还有狗</b><span>驱虫频率提高，并告诉你为什么</span></div>
+    <div class="card"><div class="big">🦁</div><b>布偶等长毛猫</b><span>换毛季自动加梳毛节点</span></div>
+    <div class="card"><div class="big">✅</div><b>已经绝育了</b><span>绝育相关提醒彻底消失，不再打扰</span></div>
+  </div>
+  <p class="lead" style="margin-top:3vh;font-size:2.2vh">填一次档案，之后打开就是自己的猫——<b>档案永久保存，养两只猫就建两份，一键切换。</b></p>
+  <div class="foot"><span>CatCare · 千猫千面</span><span>04</span></div>
+</section>
+
+<!-- 5 凌晨问诊 -->
+<section class="slide">
+  <div class="eyebrow">第 3 天凌晨 1 点 · 小雨的问题：豆豆吐了，严重吗？</div>
+  <h2>问一句，告诉你<span class="accent">该观察，还是该去医院</span></h2>
+  <div style="display:flex;gap:3vw;align-items:flex-start">
+    <div class="chat">
+      <div class="msg me">豆豆刚才吐了一次，怎么办？</div>
+      <div class="msg ai">吐了几次？它现在的精神状态怎么样，还愿意动吗？</div>
+      <div class="msg me">就一次，现在在追激光笔玩</div>
+    </div>
+    <div class="verdict" style="flex:1">
+      <h3>✅ 在家观察</h3>
+      <li>单次呕吐+精神好，大概率是毛球或吃太快</li>
+      <li>今晚少量多次喂水，观察是否再吐</li>
+      <li>如果吐第 2 次或精神变差，马上再来问</li>
+    </div>
+  </div>
+  <p class="lead" style="margin-top:3vh;font-size:2.1vh">
+    <b class="red">红</b>＝立即就医　<b style="color:var(--yellow)">黄</b>＝24-48小时内就医　<b class="accent">绿</b>＝在家观察<br>
+    它知道豆豆是 2 月龄幼猫，判断会更谨慎；公猫尿不出来这类致命急症，一律红色直送医院。
+  </p>
+  <div class="foot"><span>CatCare · AI 问诊分诊</span><span>05</span></div>
+</section>
+
+<!-- 6 医院直达 -->
+<section class="slide">
+  <div class="eyebrow">第 5 天 · 小雨的问题：真要去医院，去哪家？</div>
+  <h2>按你的位置排好序，<span class="red">24 小时急诊永远置顶</span></h2>
+  <div style="display:flex;gap:2.5vw">
+    <div style="flex:1.1">
+      <div class="hosp er">
+        <b>全心全意动物医院</b><span class="tag">24小时</span>
+        <div class="sub">宏业路理想家园北门底商 · 594m</div>
+        <div class="act">📞 一键拨号　✏️ 记录本次就诊</div>
+      </div>
+      <div class="hosp">
+        <b>宠颐生爱福动物医院 · 599m</b>
+        <div class="sub">距离按你的实时定位计算，不是拍脑袋写的</div>
+      </div>
+    </div>
+    <div class="card" style="flex:1;background:var(--yellowSoft);border-color:var(--yellowSoft)">
+      <b style="color:var(--yellow)">📍 出差在外地怎么办？</b>
+      <span style="font-size:2.05vh">它发现你不在西红门，会自动联网搜索你附近的宠物医院——在朝阳就推朝阳的，在上海就推上海的，每家带「🧭 导航」按钮，一点直达高德地图。</span>
+    </div>
+  </div>
+  <p class="lead" style="margin-top:2.6vh;font-size:2.2vh">急的时候最怕想不起来。<b>从「AI 说要去医院」到「电话打通、导航出发」，中间不需要退出去查任何东西。</b></p>
+  <div class="foot"><span>CatCare · 医院直达</span><span>06</span></div>
+</section>
+
+<!-- 7 医嘱回流 -->
+<section class="slide">
+  <div class="eyebrow">从医院回来 · 小雨的问题：医生说了一堆，我记不住</div>
+  <h2>把医嘱抄进来，<span class="accent">它自动变成日程</span></h2>
+  <div class="grid2" style="align-items:stretch">
+    <div class="card">
+      <b style="color:var(--soft);font-size:2vh">小雨记的医嘱（原话照抄就行）</b>
+      <span style="font-size:2.2vh;display:block;margin-top:1.4vh">「禁食12小时，益生菌每天两次连喂5天，3天后复诊」</span>
+      <span style="display:block;margin-top:1.6vh">检查单拍照存进去，下次复诊直接给医生看。</span>
+    </div>
+    <div class="card" style="background:var(--tealSoft);border-color:var(--tealSoft)">
+      <b style="color:var(--teal);font-size:2vh">自动出现在豆豆的时间线里</b>
+      <span style="font-size:2.2vh;line-height:2.1;display:block;margin-top:1.2vh">
+        🏥 今天：开始禁食 12 小时<br>
+        🏥 每天：益生菌 ×2（连续5天）<br>
+        🏥 周四：回医院复诊
+      </span>
+    </div>
+  </div>
+  <p class="lead" style="margin-top:3vh;font-size:2.2vh">就诊记录、问诊记录、检查单照片都沉淀在豆豆的健康档案里——<b>下次换医院，病史一目了然。</b></p>
+  <div class="foot"><span>CatCare · 医嘱回流</span><span>07</span></div>
+</section>
+
+<!-- 8 长期陪伴 -->
+<section class="slide">
+  <div class="eyebrow">之后的每一天 · 猫不会说话，数据替它说</div>
+  <h2>随手记一笔，健康看得见</h2>
+  <div class="cards">
+    <div class="card"><div class="big">⚖️</div><b>体重曲线</b><span>每次称重记一笔，涨没涨、瘦没瘦一眼看出来。成年猫体重突变往往是最早的生病信号。</span></div>
+    <div class="card"><div class="big">📚</div><b>每日科普 + 随手查</b><span>「猫能喝牛奶吗」「猫藓长什么样」——30 条兽医知识库随手查，答案标注来源，不瞎编。</span></div>
+    <div class="card"><div class="big">🐱🐱</div><b>第二只猫？</b><span>点「添加宠物」再建一份档案。每只猫独立的时间线、体重、病史，顶部一键切换。</span></div>
+  </div>
+  <p class="lead" style="margin-top:3vh;font-size:2.1vh">所有数据存在小雨自己的手机里，<b>关掉再开不用重填，也不上传任何隐私。</b></p>
+  <div class="foot"><span>CatCare · 长期陪伴</span><span>08</span></div>
+</section>
+
+<!-- 9 一周后 -->
+<section class="slide">
+  <div class="eyebrow">一周后</div>
+  <h2>小雨还是那个新手，<span class="accent">但她不慌了</span></h2>
+  <div class="before-after">
+    <div class="ba-row"><span class="before">那晚的 23 个网页</span><span class="arr">→</span><span class="after">1 分钟建档，一份自己的清单</span></div>
+    <div class="ba-row"><span class="before">凌晨一点的恐慌搜索</span><span class="arr">→</span><span class="after">问一句，红黄绿说清楚</span></div>
+    <div class="ba-row"><span class="before">「去哪家医院」的手忙脚乱</span><span class="arr">→</span><span class="after">按位置排序，一键拨号导航</span></div>
+    <div class="ba-row"><span class="before">记不住的医嘱</span><span class="arr">→</span><span class="after">自动变成打勾就行的日程</span></div>
+  </div>
+  <p class="lead" style="margin-top:3.4vh;font-size:2.1vh">我们不想让用户学会养猫知识，我们想让豆豆被养好。</p>
+  <div class="foot"><span>CatCare · 用户价值</span><span>09</span></div>
+</section>
+
+<!-- 10 商业化 · 从哪赚钱 -->
+<section class="slide">
+  <div class="eyebrow">商业化 · 用户不付「信息费」，但愿意为这三样花钱</div>
+  <h2>信任建立之后，钱在<span class="accent">服务和情感</span>里</h2>
+  <div class="money">
+    <div class="card">
+      <span class="stage">现在 · 已上线</span>
+      <div class="big">🎁</div><b>宠物文创周边</b>
+      <span>豆豆的照片一键生成专属吧唧 / 冰箱贴 / 钥匙扣，9.9 元起。对接 1688 柔性供应链，单件起做，还可与镇内医院联名。<b>已在产品内上线入口。</b></span>
+    </div>
+    <div class="card">
+      <span class="stage">第二步 · 镇内闭环</span>
+      <div class="big">🏥</div><b>本地服务导流</b>
+      <span>分诊建议就医时，用户带着结构化病情描述到店——医院获客、用户省时。向医院收取轻量入驻/推荐位费用，向用户永远免费。</span>
+    </div>
+    <div class="card">
+      <span class="stage">第三步 · 规模化</span>
+      <div class="big">💊</div><b>养护商品推荐</b>
+      <span>时间线本身就是消费清单：到点驱虫推荐驱虫药、幼猫期推荐幼猫粮。按建档信息精准推荐，佣金模式，不推与档案无关的商品。</span>
+    </div>
+  </div>
+  <div class="foot"><span>CatCare · 商业化路径</span><span>10</span></div>
+</section>
+
+<!-- 11 商业化 · 为什么成立 -->
+<section class="slide">
+  <div class="eyebrow">商业化 · 为什么这个模式成立</div>
+  <h2>入口免费建信任，<span class="accent">变现不伤体验</span></h2>
+  <div class="grid2">
+    <div>
+      <div class="quote" style="margin-bottom:2.4vh">
+        宠物经济的特点：<b>为猫花钱不心疼，为焦虑买单最快。</b><br>
+        新手期（第一年）恰是花钱最密集的阶段——疫苗、驱虫、绝育、用品，一只猫首年支出普遍数千元。
+      </div>
+      <p class="lead" style="max-width:100%;font-size:2.1vh">CatCare 在用户最焦虑的时刻出现并解决问题，信任是这个产品最大的资产——所以我们把「向用户收信息费」排除在外，分诊和知识永远免费。</p>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:1.8vh"><b style="font-size:2.2vh">对用户</b><span>核心功能永远免费；花钱的都是「本来就要买的」，只是买得更对。</span></div>
+      <div class="card" style="margin-bottom:1.8vh"><b style="font-size:2.2vh">对镇内医院</b><span>获得带病情描述的精准客源，比发传单便宜且体面。</span></div>
+      <div class="card"><b style="font-size:2.2vh">对西红门镇</b><span>养宠服务数字化样板：一个镇跑通，即可复制到下一个镇。</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>CatCare · 商业模式</span><span>11</span></div>
+</section>
+
+<!-- 12 结尾 -->
+<section class="slide">
+  <div class="paw">🐾</div>
+  <h1 style="margin-top:4vh">每一只被捡回家的猫，<br><span class="accent">都值得一个不慌的主人。</span></h1>
+  <p class="lead" style="margin-top:2vh">现在就可以体验 · 手机打开即用，无需安装</p>
+  <p style="margin-top:2.4vh"><span style="background:var(--tealSoft);color:var(--teal);font-weight:800;font-size:2.8vh;border-radius:999px;padding:1.2vh 2.4vw;font-family:ui-monospace,Menlo,monospace">catcare-chi.vercel.app</span></p>
+  <div class="foot"><span>CatCare · 2026 西红门镇产业创新黑客松</span><span>12</span></div>
+</section>
+
+<div class="kbd">← → 翻页 · 打印可存 PDF</div>
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  let cur = 0;
+  function go(n) {
+    cur = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, i) => s.classList.toggle('active', i === cur));
+  }
+  addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(cur + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(cur - 1);
+  });
+  addEventListener('click', (e) => { if (!e.target.closest('a')) go(cur + 1); });
+</script>
+</body>
+</html>
